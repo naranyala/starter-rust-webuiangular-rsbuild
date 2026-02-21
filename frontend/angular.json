@@ -20,7 +20,7 @@
             "tsConfig": "tsconfig.app.json",
             "assets": ["src/favicon.ico", "src/assets"],
             "styles": ["src/styles.css"],
-            "scripts": ["node_modules/winbox/dist/winbox.bundle.min.js"]
+            "scripts": ["node_modules/winbox/dist/js/winbox.min.js"]
           },
           "configurations": {
             "production": {

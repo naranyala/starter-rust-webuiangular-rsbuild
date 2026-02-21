@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { LogEntry, LogLevel, LogContext, LoggerOptions } from '../models';
+import { LogContext, LogEntry, LoggerOptions, LogLevel } from '../models';
 
 type LogSink = (entry: LogEntry) => void;
 
@@ -21,7 +21,7 @@ const LEVEL_PRIORITY: Record<LogLevel, number> = {
 const MAX_SANITIZE_DEPTH = 4;
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class LoggingViewModel {
   private options: LoggerOptions = DEFAULT_OPTIONS;
@@ -122,11 +122,7 @@ export class LoggingViewModel {
   }
 }
 
-function sanitizeValue(
-  value: unknown,
-  redactKeys: Set<string>,
-  depth = 0
-): unknown {
+function sanitizeValue(value: unknown, redactKeys: Set<string>, depth = 0): unknown {
   if (depth > MAX_SANITIZE_DEPTH) {
     return '[Truncated]';
   }

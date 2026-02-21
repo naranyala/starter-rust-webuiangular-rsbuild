@@ -18,11 +18,43 @@ mod utils;
 
 include!(concat!(env!("OUT_DIR"), "/embedded_frontend.rs"));
 
-mod utils_demo;
+#[cfg(feature = "demo")]
 use utils_demo::run_utilities_demo;
+
+/// Initialize global panic handler to catch all unhandled panics
+fn init_panic_handler() {
+    std::panic::set_hook(Box::new(|panic_info| {
+        let location = panic_info.location()
+            .map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column()))
+            .unwrap_or_else(|| "unknown location".to_string());
+
+        let message = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "Unknown panic payload".to_string()
+        };
+
+        eprintln!("");
+        eprintln!("╔═══════════════════════════════════════════════════════════════╗");
+        eprintln!("║                    🚨 PANIC DETECTED 🚨                      ║");
+        eprintln!("╠═══════════════════════════════════════════════════════════════╣");
+        eprintln!("║ Location: {:<55} ║", location);
+        eprintln!("║ Message:  {:<55} ║", message);
+        eprintln!("╚═══════════════════════════════════════════════════════════════╝");
+        eprintln!("");
+
+        log::error!("PANIC at {}: {}", location, message);
+    }));
+}
 
 #[allow(unused_variables)]
 fn main() {
+    // Initialize panic handler FIRST before anything else
+    init_panic_handler();
+
+    info!("Starting application - panic handler initialized");
     // Initialize dependency injection container
     if let Err(e) = di::init_container() {
         eprintln!("Failed to initialize DI container: {}", e);
@@ -180,8 +212,11 @@ fn main() {
     // Initialize database handlers with the database instance
     presentation::db_handlers::init_database(Arc::clone(&db));
 
-    // Demonstrate utility usage
-    run_utilities_demo();
+    // Demo code - only runs with --features demo flag
+    #[cfg(feature = "demo")]
+    {
+        run_utilities_demo();
+    }
 
     // Create a new window
     let mut my_window = webui::Window::new();

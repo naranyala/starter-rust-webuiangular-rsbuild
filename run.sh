@@ -87,14 +87,17 @@ build_frontend() {
 
     bun build-frontend.js
 
-    # Check for Angular build output (dist/browser/) or standard output
-    local frontend_index="frontend/dist/browser/index.html"
-    if [ ! -f "$frontend_index" ]; then
+    # Check for build output - either in root dist/ or frontend/dist/
+    local frontend_index=""
+    if [ -f "dist/index.html" ]; then
+        frontend_index="dist/index.html"
+    elif [ -f "frontend/dist/browser/index.html" ]; then
+        frontend_index="frontend/dist/browser/index.html"
+    elif [ -f "frontend/dist/index.html" ]; then
         frontend_index="frontend/dist/index.html"
     fi
     
     local required_files=(
-        "$frontend_index"
         "dist/index.html"
         "dist/static/js/main.js"
         "dist/static/js/webui.js"
@@ -235,6 +238,61 @@ clean_all() {
     echo ""
 }
 
+# Run backend tests
+test_backend() {
+    print_step "Running backend tests..."
+
+    cargo test -- --test-threads=1
+
+    if [ $? -eq 0 ]; then
+        print_status "Backend tests passed!"
+    else
+        print_error "Backend tests failed!"
+        exit 1
+    fi
+
+    echo ""
+}
+
+# Run frontend tests
+test_frontend() {
+    print_step "Running frontend tests..."
+
+    cd frontend
+    
+    # Check if Bun tests exist, otherwise fall back to Karma
+    if ls src/**/*.bun.spec.ts 1> /dev/null 2>&1; then
+        print_status "Running Bun tests..."
+        bun test
+        local result=$?
+    else
+        print_status "Running Karma tests..."
+        bun run test:karma
+        local result=$?
+    fi
+    
+    cd ..
+
+    if [ $result -eq 0 ]; then
+        print_status "Frontend tests passed!"
+    else
+        print_error "Frontend tests failed!"
+        exit 1
+    fi
+
+    echo ""
+}
+
+# Run all tests
+run_tests() {
+    print_step "Running all tests..."
+
+    test_backend
+    test_frontend
+
+    print_status "All tests passed!"
+}
+
 # Show help
 show_help() {
     echo "Usage: $0 [OPTION]"
@@ -246,6 +304,9 @@ show_help() {
     echo "  --build-rust     Build Rust only"
     echo "  --release        Build release version"
     echo "  --run            Run the application (requires build)"
+    echo "  --test            Run all tests (backend + frontend)"
+    echo "  --test-backend    Run backend tests only"
+    echo "  --test-frontend   Run frontend tests only"
     echo "  --clean          Clean all build artifacts"
     echo "  --rebuild        Clean and rebuild everything"
     echo "  --help, -h       Show this help message"
@@ -253,6 +314,7 @@ show_help() {
     echo "Examples:"
     echo "  $0               # Build and run"
     echo "  $0 --build       # Build only"
+    echo "  $0 --test        # Run all tests"
     echo "  $0 --rebuild     # Clean and rebuild"
     echo "  $0 --release     # Build release version"
     echo ""
@@ -284,6 +346,15 @@ main() {
             ;;
         --run)
             run_app
+            ;;
+        --test)
+            run_tests
+            ;;
+        --test-backend)
+            test_backend
+            ;;
+        --test-frontend)
+            test_frontend
             ;;
         --clean)
             clean_all

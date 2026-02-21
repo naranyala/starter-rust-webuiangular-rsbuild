@@ -6,6 +6,7 @@
   <base href="./">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="stylesheet" href="static/css/winbox.min.css">
   <style>
     html, body {
       margin: 0;
@@ -38,5 +39,9 @@
   </script>
   <div id="angular-error-container"></div>
   <app-root></app-root>
+  
+  <!-- WinBox must be loaded before main.js -->
+  <script src="static/js/winbox.min.js"></script>
+  <script src="static/js/webui.js"></script>
 </body>
 </html>

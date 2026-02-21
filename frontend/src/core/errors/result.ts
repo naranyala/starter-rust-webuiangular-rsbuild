@@ -1,9 +1,7 @@
 // src/core/errors/result.ts
 // Result type for frontend - inspired by Rust's Result<T, E>
 
-export type Result<T, E = AppError> = 
-  | { success: true; value: T }
-  | { success: false; error: E };
+export type Result<T, E = AppError> = { success: true; value: T } | { success: false; error: E };
 
 export interface AppError {
   code: ErrorCode;
@@ -75,7 +73,10 @@ export function mapErr<T, E, F>(result: Result<T, E>, fn: (error: E) => F): Resu
   return { success: false, error: fn(result.error) };
 }
 
-export function andThen<T, U, E>(result: Result<T, E>, fn: (value: T) => Result<U, E>): Result<U, E> {
+export function andThen<T, U, E>(
+  result: Result<T, E>,
+  fn: (value: T) => Result<U, E>
+): Result<U, E> {
   if (result.success) {
     return fn(result.value);
   }

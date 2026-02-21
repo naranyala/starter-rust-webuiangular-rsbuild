@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
+import { ActiveLogLevel, LogContext, LogEntry, LoggerOptions, LogLevel } from '../models';
 import { LoggingViewModel } from './logging.viewmodel';
-import { LogEntry, LogContext, LogLevel, ActiveLogLevel, LoggerOptions } from '../models';
 
 export class Logger {
   constructor(
@@ -10,7 +10,10 @@ export class Logger {
   ) {}
 
   child(scope: string, context: LogContext = {}): Logger {
-    return new Logger(this.backend, `${this.namespace}.${scope}`, { ...this.baseContext, ...context });
+    return new Logger(this.backend, `${this.namespace}.${scope}`, {
+      ...this.baseContext,
+      ...context,
+    });
   }
 
   withContext(context: LogContext): Logger {

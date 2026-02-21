@@ -1,2 +1,4 @@
-// Re-export API client types and functions for convenience
-export * from '../viewmodels/api-client';
+// User model exports
+// Re-export user types for convenience - the single source of truth is user.model.ts
+
+export type { User, UserCreatePayload, UserUpdatePayload } from './user.model';

@@ -2,19 +2,19 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { GlobalErrorService } from '../../core/global-error.service';
-import { getLogger } from '../../viewmodels/logger';
 import {
-  getUsers,
   createUser,
   deleteUser,
-  User,
-  Result,
-  isOk,
-  isErr,
   ErrorCode,
-  toUserMessage,
   ErrorValue,
+  getUsers,
+  isErr,
+  isOk,
+  Result,
+  toUserMessage,
+  User,
 } from '../../models';
+import { getLogger } from '../../viewmodels/logger';
 
 interface UserForm {
   name: string;
@@ -223,7 +223,8 @@ interface UserForm {
       </section>
     </div>
   `,
-  styles: [`
+  styles: [
+    `
     .demo-container {
       max-width: 1000px;
       margin: 0 auto;
@@ -555,7 +556,8 @@ interface UserForm {
         flex-wrap: wrap;
       }
     }
-  `],
+  `,
+  ],
 })
 export class ErrorHandlingDemoComponent {
   readonly errorService = inject(GlobalErrorService);
@@ -694,7 +696,7 @@ const activeUsers = mapResult(
 
     if (isOk(result)) {
       this.logger.info('User deleted', { id });
-      this.users = this.users.filter(u => u.id !== id);
+      this.users = this.users.filter((u) => u.id !== id);
     } else {
       this.errorService.handleResult(result, {
         source: 'delete-user',
@@ -704,19 +706,14 @@ const activeUsers = mapResult(
   }
 
   triggerValidationError(): void {
-    this.errorService.validationError(
-      'email',
-      'This email format is invalid',
-      { source: 'demo', title: 'Validation Example' }
-    );
+    this.errorService.validationError('email', 'This email format is invalid', {
+      source: 'demo',
+      title: 'Validation Example',
+    });
   }
 
   triggerNotFoundError(): void {
-    this.errorService.notFoundError(
-      'User',
-      999,
-      { source: 'demo', title: 'Not Found Example' }
-    );
+    this.errorService.notFoundError('User', 999, { source: 'demo', title: 'Not Found Example' });
   }
 
   async triggerDuplicateError(): Promise<void> {

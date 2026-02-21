@@ -17,12 +17,27 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    // Bleeding-edge optimizations
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
-    "strictTemplates": true
+    "strictTemplates": true,
+    // Bleeding-edge Angular 19 features
+    "strictStandalone": true,
+    "enableSignalInput": true,
+    "optimizeFor": "size",
+    // Enable new control flow
+    "enableBlockSyntax": true,
+    // Performance optimizations
+    "preserveWhitespaces": false,
+    "fullTemplateTypeCheck": true
   }
 }

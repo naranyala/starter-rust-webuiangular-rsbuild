@@ -33,7 +33,7 @@ export interface EventBusStats {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class EventBusViewModel<Events extends object> {
   private subscriptions = new Map<keyof Events & string, Map<number, InternalSubscription>>();
@@ -103,7 +103,11 @@ export class EventBusViewModel<Events extends object> {
     };
   }
 
-  publish<K extends keyof Events & string>(name: K, payload: Events[K], options: PublishOptions = {}): void {
+  publish<K extends keyof Events & string>(
+    name: K,
+    payload: Events[K],
+    options: PublishOptions = {}
+  ): void {
     if (!this.enabled()) {
       return;
     }
@@ -153,7 +157,10 @@ export class EventBusViewModel<Events extends object> {
     }
   }
 
-  getHistory<K extends keyof Events & string>(name?: K, limit?: number): Array<BusEvent<K, Events[K]>> {
+  getHistory<K extends keyof Events & string>(
+    name?: K,
+    limit?: number
+  ): Array<BusEvent<K, Events[K]>> {
     let data = this.history;
     if (name) {
       data = data.filter((entry) => entry.name === name);

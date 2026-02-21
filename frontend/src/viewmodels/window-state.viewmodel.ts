@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { WindowEntry, WindowState, WindowStateEvent } from '../models';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class WindowStateViewModel {
   private readonly windowEntries = signal<WindowEntry[]>([]);
@@ -57,9 +57,7 @@ export class WindowStateViewModel {
 
   restoreWindow(id: string): void {
     this.windowEntries.update((entries) =>
-      entries.map((entry) =>
-        entry.id === id ? { ...entry, minimized: false } : entry
-      )
+      entries.map((entry) => (entry.id === id ? { ...entry, minimized: false } : entry))
     );
   }
 

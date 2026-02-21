@@ -1,9 +1,13 @@
 [package]
 name = "rustwebui-app"
 version = "1.0.0"
-edition = "2024"
+edition = "2021"
 description = "Rust WebUI Application with SQLite"
 authors = ["Developer"]
+
+[features]
+default = []
+demo = []  # Enable with: cargo run --features demo
 
 [dependencies]
 # Core
@@ -88,6 +92,11 @@ cc = "1.0"
 walkdir = "2.3"
 toml = "0.8"
 
+# Test dependencies
+[dev-dependencies]
+tempfile = "3.8"
+mockall = "0.13"
+
 # Profiles
 [profile.release]
 opt-level = 3
@@ -95,7 +104,7 @@ lto = true
 codegen-units = 1
 
 [profile.dev]
-debug = false
+debug = true  # Enable debug info for better test error messages
 
 # Package metadata
 [package.metadata.wix]

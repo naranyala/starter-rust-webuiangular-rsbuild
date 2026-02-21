@@ -1,20 +1,49 @@
 import { ErrorHandler, Injector, inject } from '@angular/core';
+import { ErrorCode, ErrorValue } from '../types/error.types';
 import { GlobalErrorService } from './global-error.service';
-import { ErrorValue, ErrorCode } from '../types/error.types';
 
 export class GlobalErrorHandler implements ErrorHandler {
   private readonly injector = inject(Injector);
 
   handleError(error: unknown): void {
+    // Log to console immediately for debugging
+    this.logToConsole('ERROR', error);
+
     const errorService = this.injector.get(GlobalErrorService);
 
     // Convert unknown error to ErrorValue with rich context
     const errorValue: ErrorValue = this.extractErrorValue(error);
 
-    errorService.report(errorValue, { 
+    errorService.report(errorValue, {
       source: 'angular',
-      title: this.extractTitle(error)
+      title: this.extractTitle(error),
     });
+  }
+
+  /**
+   * Log error to console with full details
+   */
+  private logToConsole(level: string, error: unknown): void {
+    const timestamp = new Date().toISOString();
+    const prefix = `%c[${timestamp}] [${level}]`;
+
+    if (error instanceof Error) {
+      console.error(
+        prefix,
+        'color: #ff4444; font-weight: bold;',
+        `\n┌──────────────────────────────────────────────────────────────┐
+│ Angular Error Handler                                             │
+├──────────────────────────────────────────────────────────────┤
+│ Type: ${error.name}
+│ Message: ${error.message}
+│ Stack: ${error.stack?.split('\n').slice(0, 5).join('\n│ ') || 'N/A'}
+└──────────────────────────────────────────────────────────────┘`
+      );
+    } else if (typeof error === 'string') {
+      console.error(prefix, 'color: #ff4444; font-weight: bold;', `\n${error}`);
+    } else {
+      console.error(prefix, 'color: #ff4444; font-weight: bold;', '\nUnknown error:', error);
+    }
   }
 
   /**
@@ -32,7 +61,7 @@ export class GlobalErrorHandler implements ErrorHandler {
           context: {
             status: String(httpError.status),
             url: httpError.url || 'unknown',
-          }
+          },
         };
       }
 
@@ -52,17 +81,17 @@ export class GlobalErrorHandler implements ErrorHandler {
 
     if (error && typeof error === 'object') {
       const obj = error as Record<string, unknown>;
-      
+
       // Check if it's an API error response
       if (obj.error && typeof obj.error === 'object') {
         const errorObj = obj.error as Record<string, unknown>;
         return {
           code: (errorObj.code as ErrorCode) || ErrorCode.Unknown,
           message: (errorObj.message as string) || 'An error occurred',
-          details: (errorObj.details as string),
-          field: (errorObj.field as string),
-          cause: (errorObj.cause as string),
-          context: (errorObj.context as Record<string, string>),
+          details: errorObj.details as string,
+          field: errorObj.field as string,
+          cause: errorObj.cause as string,
+          context: errorObj.context as Record<string, string>,
         };
       }
 
@@ -71,7 +100,7 @@ export class GlobalErrorHandler implements ErrorHandler {
         return {
           code: this.inferErrorCode(obj.message),
           message: obj.message,
-          details: obj.stack as string || JSON.stringify(error, null, 2),
+          details: (obj.stack as string) || JSON.stringify(error, null, 2),
         };
       }
     }
@@ -88,7 +117,7 @@ export class GlobalErrorHandler implements ErrorHandler {
    */
   private inferErrorCode(message: string): ErrorCode {
     const lowerMsg = message.toLowerCase();
-    
+
     if (lowerMsg.includes('network') || lowerMsg.includes('fetch') || lowerMsg.includes('http')) {
       return ErrorCode.DbConnectionFailed;
     }
@@ -101,13 +130,17 @@ export class GlobalErrorHandler implements ErrorHandler {
     if (lowerMsg.includes('duplicate') || lowerMsg.includes('already exists')) {
       return ErrorCode.DbAlreadyExists;
     }
-    if (lowerMsg.includes('permission') || lowerMsg.includes('unauthorized') || lowerMsg.includes('forbidden')) {
+    if (
+      lowerMsg.includes('permission') ||
+      lowerMsg.includes('unauthorized') ||
+      lowerMsg.includes('forbidden')
+    ) {
       return ErrorCode.InternalError;
     }
     if (lowerMsg.includes('timeout')) {
       return ErrorCode.InternalError;
     }
-    
+
     return ErrorCode.Unknown;
   }
 

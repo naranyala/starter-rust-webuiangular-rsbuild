@@ -1,4 +1,2 @@
-// viewmodels/mod.rs
-// ViewModels - business logic and use case implementations
-
-pub mod handlers;
+// Application layer - use case orchestration
+// Note: WebUI-specific handlers are in the presentation layer

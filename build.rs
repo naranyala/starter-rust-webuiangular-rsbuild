@@ -71,15 +71,17 @@ fn generate_build_config(project_dir: &str) {
     for config_path in &config_paths {
         if let Ok(content) = fs::read_to_string(config_path) {
             if let Ok(config) = content.parse::<toml::Value>() {
-                if let Some(exe_name) = config
-                    .get("executable")
-                    .and_then(|e| e.get("name"))
-                    .and_then(|n| n.as_str())
-                    && !exe_name.is_empty() 
-                {
-                    executable_name = exe_name.to_string();
+                // Extract executable name using nested if let (Rust 2021 compatible)
+                if let Some(exe_value) = config.get("executable") {
+                    if let Some(name_value) = exe_value.get("name") {
+                        if let Some(exe_name) = name_value.as_str() {
+                            if !exe_name.is_empty() {
+                                executable_name = exe_name.to_string();
+                            }
+                        }
+                    }
                 }
-                
+
                 if let Some(log) = config.get("logging") {
                     if let Some(level) = log.get("level").and_then(|l| l.as_str()) {
                         log_level = level.to_string();

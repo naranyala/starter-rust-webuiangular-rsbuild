@@ -79,22 +79,26 @@ read_config() {
         config_file="config/app.config.toml"
     fi
 
+    # Read cargo package name first (from Cargo.toml)
+    PACKAGE_NAME=$(grep '^name = ' Cargo.toml 2>/dev/null | head -1 | cut -d'"' -f2 || echo "rustwebui-app")
+
     if [ -n "$config_file" ]; then
-        # Read executable name
-        APP_NAME=$(grep -A1 '\[executable\]' "$config_file" 2>/dev/null | grep 'name' | cut -d'=' -f2 | tr -d ' "' || echo "app")
+        # Read executable name from config
+        APP_NAME=$(grep -A1 '\[executable\]' "$config_file" 2>/dev/null | grep 'name' | cut -d'=' -f2 | tr -d ' "' || echo "")
         # Read version
         APP_VERSION=$(grep '^version = ' Cargo.toml 2>/dev/null | cut -d'"' -f2 || echo "1.0.0")
     else
-        APP_NAME="app"
+        APP_NAME=""
         APP_VERSION="1.0.0"
     fi
 
-    # Fallback to cargo package name
+    # Use configured executable name, or fall back to cargo package name
     if [ -z "$APP_NAME" ]; then
-        APP_NAME=$(grep '^name = ' Cargo.toml | head -1 | cut -d'"' -f2 || echo "rustwebui-app")
+        APP_NAME="${PACKAGE_NAME}"
     fi
 
-    print_status "App name: $APP_NAME"
+    print_status "Package name: $PACKAGE_NAME"
+    print_status "Executable name: $APP_NAME"
     print_status "App version: $APP_VERSION"
 }
 
@@ -220,24 +224,37 @@ create_dist_package() {
     fi
 
     local source_exe=""
-    if [ "$build_type" = "release" ]; then
+    local build_dir="target/${build_type}"
+    
+    # Priority 1: Check for renamed executable (from post-build.sh)
+    if [ -f "${build_dir}/${exe_name}" ]; then
+        source_exe="${build_dir}/${exe_name}"
+    elif [ "$PLATFORM" = "windows" ] && [ -f "${build_dir}/${exe_name}.exe" ]; then
+        source_exe="${build_dir}/${exe_name}.exe"
+    # Priority 2: Check for cargo package name
+    elif [ -f "${build_dir}/${PACKAGE_NAME}" ]; then
+        source_exe="${build_dir}/${PACKAGE_NAME}"
+    elif [ "$PLATFORM" = "windows" ] && [ -f "${build_dir}/${PACKAGE_NAME}.exe" ]; then
+        source_exe="${build_dir}/${PACKAGE_NAME}.exe"
+    # Priority 3: Fallback to APP_NAME path
+    elif [ "$build_type" = "release" ]; then
         source_exe="target/release/${APP_NAME}"
     else
         source_exe="target/debug/${APP_NAME}"
     fi
-
-    # Handle different executable names from cargo
-    if [ ! -f "$source_exe" ]; then
-        local cargo_name=$(grep '^name = ' Cargo.toml | head -1 | cut -d'"' -f2)
-        source_exe="target/${build_type}/${cargo_name}"
-    fi
-
-    if [ "$PLATFORM" = "windows" ]; then
+    
+    # Add .exe extension for Windows if not already present
+    if [ "$PLATFORM" = "windows" ] && [[ ! "$source_exe" =~ \.exe$ ]]; then
         source_exe="${source_exe}.exe"
     fi
 
     if [ ! -f "$source_exe" ]; then
-        print_error "Executable not found: $source_exe"
+        print_error "Executable not found. Tried:"
+        print_error "  1. ${build_dir}/${exe_name}"
+        print_error "  2. ${build_dir}/${PACKAGE_NAME}"
+        print_error "  3. ${source_exe}"
+        print_error ""
+        print_error "Make sure to run post-build.sh after cargo build, or build with ./run.sh --build"
         return 1
     fi
 

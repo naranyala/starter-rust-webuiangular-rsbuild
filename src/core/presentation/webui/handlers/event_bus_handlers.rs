@@ -1,4 +1,4 @@
-use crate::core::infrastructure::event_bus::{EventData, GLOBAL_EVENT_BUS};
+use crate::core::infrastructure::event_bus::{EventData, get_global_event_bus};
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::ffi::CStr;
@@ -56,7 +56,7 @@ pub fn setup_event_bus_handlers(window: &mut webui_rs::webui::Window) {
                 let frontend_event = EventData::new(req.event_type.clone(), req.data)
                     .with_source(req.source.unwrap_or_else(|| "frontend".to_string()));
 
-                GLOBAL_EVENT_BUS.emit_with_source(
+                get_global_event_bus().emit_with_source(
                     &frontend_event.event_type,
                     frontend_event.payload,
                     frontend_event.source.as_deref().unwrap_or("frontend"),
@@ -92,7 +92,7 @@ pub fn setup_event_bus_handlers(window: &mut webui_rs::webui::Window) {
             limit: Some(50),
         });
 
-        let history = match GLOBAL_EVENT_BUS.get_history(req.event_type.as_deref(), req.limit) {
+        let history = match get_global_event_bus().get_history(req.event_type.as_deref(), req.limit) {
             Ok(h) => h,
             Err(e) => {
                 log::error!("Failed to get event history: {}", e);
@@ -123,7 +123,7 @@ pub fn setup_event_bus_handlers(window: &mut webui_rs::webui::Window) {
     });
 
     window.bind("event:stats", move |event| {
-        let stats = GLOBAL_EVENT_BUS.get_stats();
+        let stats = get_global_event_bus().get_stats();
 
         if let Ok(json) = serde_json::to_string(&stats) {
             send_response(webui_rs::webui::Window::from_id(event.window), &json);
@@ -131,7 +131,7 @@ pub fn setup_event_bus_handlers(window: &mut webui_rs::webui::Window) {
     });
 
     window.bind("event:clear_history", move |_event| {
-        if let Err(e) = GLOBAL_EVENT_BUS.clear_history() {
+        if let Err(e) = get_global_event_bus().clear_history() {
             log::error!("Failed to clear event history: {}", e);
         }
     });

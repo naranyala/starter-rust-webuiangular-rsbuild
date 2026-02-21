@@ -1,22 +1,20 @@
-use crate::core::error::{AppError, ErrorValue, ErrorCode};
+use crate::core::error::{AppError, ErrorCode, ErrorValue};
 use crate::core::infrastructure::database::Database;
+use crate::core::infrastructure::di::get_container;
 use log::{error, info};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use webui_rs::webui;
 
-lazy_static::lazy_static! {
-    static ref DB_INSTANCE: Mutex<Option<Arc<Database>>> = Mutex::new(None);
-}
-
 pub fn init_database(db: Arc<Database>) {
-    let mut instance = DB_INSTANCE.lock().unwrap();
-    *instance = Some(db);
-    info!("Database handlers initialized");
+    if let Err(e) = get_container().register_singleton(db.clone()) {
+        error!("Failed to register database in DI container: {}", e);
+        return;
+    }
+    info!("Database registered in DI container");
 }
 
 fn get_db() -> Option<Arc<Database>> {
-    let instance = DB_INSTANCE.lock().unwrap();
-    instance.clone()
+    get_container().resolve_arc::<Database>().ok()
 }
 
 /// Send a success response to the frontend

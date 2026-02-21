@@ -182,7 +182,8 @@ async function buildFrontend() {
     logger.startStep('rsbuild', 'Running Rsbuild build');
     try {
       const buildStart = Date.now();
-      execSync('bun run build', { stdio: VERBOSE ? 'inherit' : 'pipe', cwd: frontendDir });
+      // Use bunx to run rsbuild (will use local if available, global otherwise)
+      execSync('bunx --bun @rsbuild/core build', { stdio: VERBOSE ? 'inherit' : 'pipe', cwd: frontendDir });
       const buildDuration = Date.now() - buildStart;
       logger.stepLog(`Rsbuild completed in ${buildDuration}ms`);
     } catch (buildError) {
@@ -218,8 +219,9 @@ async function buildFrontend() {
     const entryJsFiles = allJsFiles.filter(f => 
       f.startsWith('main-') && f.endsWith('.js') && !f.endsWith('.map')
     );
+    // Match chunk files: uppercase or lowercase hex hashes (e.g., vendors.59a80c68.js or 613.ebba8a50dba2d481.js)
     const chunkFiles = allJsFiles.filter(
-      f => /^[A-Z0-9]+\.[a-f0-9]+\.js$/.test(f) && !f.endsWith('.map')
+      f => /^[a-zA-Z0-9]+\.[a-f0-9]+\.js$/.test(f) && !f.endsWith('.map')
     );
 
     if (entryJsFiles.length === 0) {
@@ -327,7 +329,24 @@ async function buildFrontend() {
     // Step 4b: Copy webui.js
     logger.startStep('copy-webui', 'Copying WebUI bridge');
     const webuiSrc = path.join(projectRoot, 'thirdparty', 'webui-c-src', 'bridge', 'webui.js');
+    const webuiTsSrc = path.join(projectRoot, 'thirdparty', 'webui-c-src', 'bridge', 'webui.ts');
     const webuiDest = path.join(rootStaticJs, 'webui.js');
+    
+    // Build webui.js from TypeScript if it doesn't exist
+    if (!await pathExists(webuiSrc) && await pathExists(webuiTsSrc)) {
+      logger.stepLog('Building webui.js from TypeScript...');
+      try {
+        const bridgeDir = path.join(projectRoot, 'thirdparty', 'webui-c-src', 'bridge');
+        execSync(`bun build --bundle --target=browser --format=esm --minify --outfile=webui.js webui.ts`, { 
+          stdio: VERBOSE ? 'inherit' : 'pipe', 
+          cwd: bridgeDir 
+        });
+        logger.stepLog('webui.js built from TypeScript');
+      } catch (buildError) {
+        logger.stepLog(`Warning: Failed to build webui.js: ${buildError.message}`, 'WARN');
+      }
+    }
+    
     if (await pathExists(webuiSrc)) {
       await fs.copyFile(webuiSrc, webuiDest);
       await fs.copyFile(webuiSrc, path.join(distStaticJs, 'webui.js'));
@@ -343,7 +362,13 @@ async function buildFrontend() {
     // Check for index.html in browser directory or root dist
     let rsbuildIndex = path.join(browserDir, 'index.html');
     if (!await pathExists(rsbuildIndex)) {
+      rsbuildIndex = path.join(browserDir, 'main.html');
+    }
+    if (!await pathExists(rsbuildIndex)) {
       rsbuildIndex = path.join(rsbuildOutputDir, 'index.html');
+    }
+    if (!await pathExists(rsbuildIndex)) {
+      rsbuildIndex = path.join(rsbuildOutputDir, 'main.html');
     }
     const rootIndexHtml = path.join(rootDist, 'index.html');
 
@@ -354,46 +379,17 @@ async function buildFrontend() {
       // Fix base href
       htmlContent = htmlContent.replace(/<base href="[^"]*">/, '<base href="./">');
       
-      // Fix CSS paths - add static/css/ prefix
-      htmlContent = htmlContent.replace(
-        /href="([^"]*\.css)"/g,
-        (match, p1) => {
-          if (p1.startsWith('static/') || p1.startsWith('./')) {
-            return match;
-          }
-          return `href="./static/css/${p1}"`;
-        }
-      );
+      // Fix paths: add ./ prefix where missing
+      // Handle: static/css/... -> ./static/css/...
+      htmlContent = htmlContent.replace(/href="static\//g, 'href="./static/');
+      htmlContent = htmlContent.replace(/src="static\//g, 'src="./static/');
       
-      // Fix JS paths - add static/js/ prefix AND ensure winbox loads first
-      let winboxScript = '<script src="./static/js/winbox.min.js"></script>\n  ';
-      htmlContent = htmlContent.replace(
-        /src="([^"]*\.js)"/g,
-        (match, p1) => {
-          if (p1.startsWith('static/') || p1.startsWith('./')) {
-            return match;
-          }
-          // Don't add prefix to winbox.min.js as we'll add it separately
-          if (p1.includes('winbox')) {
-            return match;
-          }
-          return `src="./static/js/${p1}"`;
-        }
-      );
+      // Handle: /static/js/... -> ./static/js/...
+      htmlContent = htmlContent.replace(/src="\/static\//g, 'src="./static/');
       
-      // Add winbox.min.js before polyfills if not already present
-      if (!htmlContent.includes('./static/js/winbox.min.js')) {
-        htmlContent = htmlContent.replace(
-          /(<script src="\.\/static\/js\/polyfills-[^"]+\.js")/,
-          winboxScript + '$1'
-        );
-      }
-      
-      // Fix favicon path
-      htmlContent = htmlContent.replace(
-        /href="([^"]*favicon[^"]*)"/g,
-        'href="./favicon.ico"'
-      );
+      // Fix favicon path  
+      htmlContent = htmlContent.replace(/href="favicon.ico"/g, 'href="./favicon.ico"');
+      htmlContent = htmlContent.replace(/href="\.\/favicon.ico"/g, 'href="./favicon.ico"');
       
       await fs.writeFile(rootIndexHtml, htmlContent);
       logger.stepLog('Copied and fixed index.html paths');

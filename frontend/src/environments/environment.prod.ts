@@ -2,8 +2,8 @@ export const environment = {
   production: true,
   logging: {
     enabled: true,
-    minLevel: 'info' as const,
-    maxEntries: 400,
+    minLevel: 'warn' as const,
+    maxEntries: 1000,
     redactKeys: ['password', 'token', 'secret', 'authorization', 'cookie'],
   },
 };

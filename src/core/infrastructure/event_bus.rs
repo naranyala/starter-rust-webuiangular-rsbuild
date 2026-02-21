@@ -2,7 +2,7 @@
 
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 use crate::core::error::{AppError, AppResult, ErrorValue, ErrorCode};
 
@@ -158,13 +158,15 @@ impl Default for EventBus {
     }
 }
 
-lazy_static::lazy_static! {
-    pub static ref GLOBAL_EVENT_BUS: EventBus = EventBus::new(100);
+static GLOBAL_EVENT_BUS: OnceLock<EventBus> = OnceLock::new();
+
+pub fn get_global_event_bus() -> &'static EventBus {
+    GLOBAL_EVENT_BUS.get_or_init(|| EventBus::new(100))
 }
 
 #[macro_export]
 macro_rules! event_publish {
     ($event_type:expr, $payload:expr) => {
-        $crate::core::infrastructure::event_bus::GLOBAL_EVENT_BUS.emit($event_type, $payload)
+        $crate::core::infrastructure::event_bus::get_global_event_bus().emit($event_type, $payload)
     };
 }

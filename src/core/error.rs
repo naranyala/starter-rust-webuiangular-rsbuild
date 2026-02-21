@@ -304,13 +304,14 @@ pub mod errors {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json;
 
     #[test]
     fn test_error_value_creation() {
         let error = ErrorValue::new(ErrorCode::DbNotFound, "User not found")
             .with_field("user_id")
             .with_context("table", "users");
-        
+
         assert_eq!(error.code, ErrorCode::DbNotFound);
         assert_eq!(error.message, "User not found");
         assert_eq!(error.field, Some("user_id".to_string()));
@@ -320,17 +321,58 @@ mod tests {
     fn test_error_value_serialization() {
         let error = ErrorValue::new(ErrorCode::ValidationFailed, "Invalid email");
         let json = error.to_response();
-        
+
         assert!(json.get("code").is_some());
         assert!(json.get("message").is_some());
+        assert_eq!(json["code"], "VALIDATION_FAILED");
+        assert_eq!(json["message"], "Invalid email");
+    }
+
+    #[test]
+    fn test_error_value_with_details() {
+        let error = ErrorValue::new(ErrorCode::DbQueryFailed, "Query failed")
+            .with_details("SQL error at line 1")
+            .with_cause("Database connection lost");
+
+        assert_eq!(error.details, Some("SQL error at line 1".to_string()));
+        assert_eq!(error.cause, Some("Database connection lost".to_string()));
+    }
+
+    #[test]
+    fn test_error_value_json_roundtrip() {
+        let error = ErrorValue::new(ErrorCode::ResourceNotFound, "Not found")
+            .with_context("resource", "user");
+
+        let json = serde_json::to_string(&error).expect("Failed to serialize");
+        let deserialized: ErrorValue = serde_json::from_str(&json).expect("Failed to deserialize");
+
+        assert_eq!(deserialized.code, ErrorCode::ResourceNotFound);
+        assert_eq!(deserialized.message, "Not found");
     }
 
     #[test]
     fn test_error_helpers() {
         let err = errors::db_not_found("User", 123);
         assert!(matches!(err, AppError::NotFound(_)));
-        
+
         let err = errors::validation_failed("email", "Must be valid email");
         assert!(matches!(err, AppError::Validation(_)));
+    }
+
+    #[test]
+    fn test_error_code_display() {
+        assert_eq!(format!("{}", ErrorCode::DbNotFound), "DB_NOT_FOUND");
+        assert_eq!(format!("{}", ErrorCode::InternalError), "INTERNAL_ERROR");
+    }
+
+    #[test]
+    fn test_app_error_to_json() {
+        let error = AppError::Database(
+            ErrorValue::new(ErrorCode::DbQueryFailed, "Query failed")
+        );
+
+        let json = error.to_json();
+        assert_eq!(json["code"], "DB_QUERY_FAILED");
+        assert_eq!(json["message"], "Query failed");
     }
 }

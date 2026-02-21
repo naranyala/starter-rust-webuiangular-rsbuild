@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@angular/core": "./test/mocks/angular-core.ts",
+    "@angular/common": "./test/mocks/angular-common.ts",
+    "@angular/platform-browser": "./test/mocks/angular-platform-browser.ts",
+    "@angular/forms": "./test/mocks/angular-forms.ts"
+  }
+}
