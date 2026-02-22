@@ -2,8 +2,18 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
-    "types": ["jasmine", "node"]
+    "types": ["bun-types", "node"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "noImplicitThis": false
   },
-  "files": ["src/test.ts", "src/polyfills.ts"],
-  "include": ["src/**/*.spec.ts", "src/**/*.d.ts"]
+  "include": ["src/**/*.spec.ts"],
+  "exclude": ["node_modules", "dist"]
 }

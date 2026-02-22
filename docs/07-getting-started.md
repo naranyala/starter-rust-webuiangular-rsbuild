@@ -60,7 +60,7 @@ xcode-select --install
 ### Clone Repository
 ```bash
 git clone <repository-url>
-cd starter-rust-webuiangular-rspack
+cd starter-rust-webuiangular-rsbuild
 ```
 
 ### Verify Prerequisites
@@ -130,7 +130,7 @@ The script will:
 
 ### Application Configuration
 
-Edit `app.config.toml`:
+Edit `config/app.config.toml`:
 
 ```toml
 [app]
@@ -191,8 +191,8 @@ tail -f application.log
 [features]
 dark_mode = true
 
-# Open browser dev tools (if supported)
-# Or use console logging
+# Open browser DevTools (F12)
+# Use console for logging
 ```
 
 ### Testing
@@ -201,7 +201,7 @@ dark_mode = true
 cargo test
 
 # Run frontend tests
-cd frontend && npm test
+cd frontend && bun run test
 ```
 
 ## Common Tasks
@@ -228,6 +228,41 @@ cd frontend && npm test
 # frontend/src/views/my-feature/
 ```
 
+### Add New Backend Endpoint
+
+1. Create handler function:
+```rust
+// src/core/presentation/webui/handlers/my_handlers.rs
+pub fn get_my_data() -> serde_json::Value {
+    serde_json::json!({
+        "data": "Hello from Rust"
+    })
+}
+```
+
+2. Register WebUI binding:
+```rust
+window.bind("get_my_data", |event| {
+    let data = get_my_data();
+    let response = serde_json::json!({ "data": data });
+    let js = format!(
+        "window.dispatchEvent(new CustomEvent('get_my_data_response', {{ detail: {} }}))",
+        response
+    );
+    webui::Window::from_id(event.window).run_js(&js);
+});
+```
+
+3. Call from frontend:
+```typescript
+// frontend/src/viewmodels/my-service.ts
+window.get_my_data();
+window.addEventListener('get_my_data_response', (event) => {
+    const response = event.detail;
+    console.log(response.data);
+});
+```
+
 ### Add Database Table
 
 1. Update schema in `src/core/infrastructure/database/connection.rs`:
@@ -250,25 +285,6 @@ pub struct MyEntity {
 ```
 
 3. Add repository methods in `src/core/infrastructure/database/`
-
-### Add New Endpoint
-
-1. Backend handler:
-```rust
-window.bind("my_endpoint", |event| {
-    let response = json!({
-        "success": true,
-        "data": "Hello from Rust!"
-    });
-    send_response(window, "my_response", &response);
-});
-```
-
-2. Frontend call:
-```javascript
-const result = await window.WebUIBridge.callRustFunction('my_endpoint', {});
-console.log(result.data);
-```
 
 ## Troubleshooting
 
@@ -328,6 +344,33 @@ xcode-select --install
 - Reduce data loaded at startup
 - Implement pagination
 
+## Using DevTools
+
+The DevTools panel provides comprehensive system diagnostics:
+
+### Accessing DevTools
+1. Click the bottom panel toggle to expand
+2. Click the DevTools tab (wrench icon)
+3. Panel expands to 50% screen height
+
+### Features
+- **Overview**: Quick system summary
+- **System**: OS, hostname, CPU info
+- **Memory**: Memory usage visualization
+- **Process**: Process details and uptime
+- **Network**: Network interfaces
+- **Database**: Database status
+- **Config**: Application configuration
+- **Performance**: Frontend metrics
+- **Events**: Event log with filtering
+- **Bindings**: Backend function status
+- **Windows**: Open window list
+
+### Auto-Refresh
+- Enabled by default (2-second interval)
+- Toggle with play/pause button
+- Export data with download button
+
 ## Next Steps
 
 After getting started:
@@ -337,6 +380,7 @@ After getting started:
 3. Check [Communication](04-communication.md) for frontend-backend interaction
 4. Explore [Dependencies](05-dependencies.md) for available libraries
 5. Review [Improvements](06-improvements.md) for enhancement ideas
+6. Read [Errors as Values](09-errors-as-values.md) for error handling patterns
 
 ## Resources
 

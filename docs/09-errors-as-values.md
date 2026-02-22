@@ -4,21 +4,21 @@ This document describes the "Errors as Values" pattern implemented in this proje
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Core Concepts](#core-concepts)
-3. [Backend Implementation (Rust)](#backend-implementation-rust)
-4. [Frontend Implementation (TypeScript)](#frontend-implementation-typescript)
-5. [Cross-Boundary Communication](#cross-boundary-communication)
-6. [Usage Examples](#usage-examples)
-7. [Best Practices](#best-practices)
+1. Overview
+2. Core Concepts
+3. Backend Implementation (Rust)
+4. Frontend Implementation (TypeScript)
+5. Cross-Boundary Communication
+6. Usage Examples
+7. Best Practices
 
 ---
 
 ## Overview
 
-**Errors as Values** is a functional programming pattern where errors are treated as regular data values rather than exceptional control flow. This approach provides:
+Errors as Values is a functional programming pattern where errors are treated as regular data values rather than exceptional control flow. This approach provides:
 
-- **Type Safety**: Errors are part of function signatures via `Result<T, E>`
+- **Type Safety**: Errors are part of function signatures via Result<T, E>
 - **Explicit Handling**: Callers must explicitly handle success and failure cases
 - **Composability**: Errors can be transformed, mapped, and chained like any other value
 - **Cross-Boundary Consistency**: Same error structure on both backend and frontend
@@ -36,7 +36,7 @@ This document describes the "Errors as Values" pattern implemented in this proje
 
 ### The Result Type
 
-The foundation of errors-as-values is the `Result` type:
+The foundation of errors-as-values is the Result type:
 
 ```rust
 // Rust
@@ -45,7 +45,7 @@ pub type AppResult<T> = Result<T, AppError>;
 
 ```typescript
 // TypeScript
-type Result<T, E = ErrorValue> = 
+type Result<T, E = ErrorValue> =
   | { ok: true; value: T }
   | { ok: false; error: E };
 ```
@@ -113,10 +113,10 @@ export enum ErrorCode {
 
 ```
 src/core/
-├── error.rs                    # Core error types and utilities
-└── infrastructure/
-    └── database/
-        └── users.rs            # Example database operations with errors
++-- error.rs                    # Core error types and utilities
++-- infrastructure/
+    +-- database/
+        +-- users.rs            # Example database operations with errors
 ```
 
 ### Creating Errors
@@ -215,7 +215,7 @@ impl Database {
                     .with_field("name")
             ));
         }
-        
+
         // Basic email validation
         if !email.contains('@') {
             return Err(AppError::Validation(
@@ -230,7 +230,7 @@ impl Database {
                 ErrorValue::new(ErrorCode::LockPoisoned, "Failed to acquire lock")
             )
         })?;
-        
+
         conn.execute(/* ... */).map_err(|e| {
             // Check for specific error types
             if e.to_string().contains("UNIQUE constraint failed") {
@@ -259,15 +259,15 @@ impl Database {
 
 ```
 frontend/src/
-├── types/
-│   └── error.types.ts          # Core error types and utilities
-├── core/
-│   └── global-error.service.ts # Error handling service
-├── viewmodels/
-│   └── api-client.ts           # Backend API client
-└── views/
-    └── demo/
-        └── error-handling-demo.component.ts
++-- types/
+|   +-- error.types.ts          # Core error types and utilities
++-- core/
+|   +-- global-error.service.ts # Error handling service
++-- viewmodels/
+|   +-- api-client.ts           # Backend API client
++-- views/
+    +-- demo/
+        +-- error-handling-demo.component.ts
 ```
 
 ### Creating Errors
@@ -329,9 +329,9 @@ const mapped = mapError(users, err => ({
 }));
 
 // Chain operations (flat map)
-const result = andThen(getUser(id), user => 
-  user.isActive 
-    ? ok(user) 
+const result = andThen(getUser(id), user =>
+  user.isActive
+    ? ok(user)
     : err({ code: ErrorCode.ValidationFailed, message: 'User is inactive' })
 );
 
@@ -386,7 +386,7 @@ import { getUsers, createUser, isOk } from '../viewmodels/api-client';
 // Call backend with automatic error handling
 async loadUsers() {
   const result = await getUsers();
-  
+
   if (isOk(result)) {
     this.users = result.value;
   } else {
@@ -399,7 +399,7 @@ async createUser() {
     name: 'John',
     email: 'john@example.com'
   });
-  
+
   if (isOk(result)) {
     this.userId = result.value;
   } else {
@@ -413,7 +413,7 @@ async createUser() {
 
 ## Cross-Boundary Communication
 
-### Backend → Frontend Protocol
+### Backend to Frontend Protocol
 
 Backend handlers send structured responses:
 
@@ -444,7 +444,7 @@ fn send_error_response(window: webui::Window, event_name: &str, err: &AppError) 
 
 ```typescript
 // API response type
-export type ApiResponse<T> = 
+export type ApiResponse<T> =
   | { success: true; data: T; error: null }
   | { success: false; data: null; error: ErrorValue };
 
@@ -476,9 +476,9 @@ export function toResult<T>(response: ApiResponse<T>): Result<T, ErrorValue> {
 // Component
 async loadUsers() {
   this.loading = true;
-  
+
   const result = await getUsers();
-  
+
   if (isOk(result)) {
     this.users = result.value;
     this.logger.info('Users loaded', { count: this.users.length });
@@ -489,7 +489,7 @@ async loadUsers() {
       title: 'Failed to load users'
     });
   }
-  
+
   this.loading = false;
 }
 ```
@@ -503,11 +503,11 @@ async submitForm() {
     this.errorService.validationError('form', 'Please fix validation errors');
     return;
   }
-  
+
   this.submitting = true;
-  
+
   const result = await createUser(this.formData);
-  
+
   if (isOk(result)) {
     this.logger.info('User created', { id: result.value });
     this.form.reset();
@@ -517,7 +517,7 @@ async submitForm() {
     switch (result.error.code) {
       case ErrorCode.DbAlreadyExists:
         this.errorService.validationError(
-          'email', 
+          'email',
           'A user with this email already exists'
         );
         break;
@@ -528,7 +528,7 @@ async submitForm() {
         });
     }
   }
-  
+
   this.submitting = false;
 }
 ```
@@ -543,18 +543,18 @@ async processUserWorkflow(userId: number) {
     this.errorService.report(userResult.error);
     return;
   }
-  
+
   const validatedResult = this.validateUser(userResult.value);
   if (isErr(validatedResult)) {
     this.errorService.report(validatedResult.error);
     return;
   }
-  
+
   const updateResult = await updateUser({
     id: userId,
     ...validatedResult.value
   });
-  
+
   if (isOk(updateResult)) {
     this.logger.info('User updated successfully');
   } else {
@@ -569,7 +569,7 @@ async processUserWorkflow(userId: number) {
 pub fn setup_db_handlers(window: &mut webui::Window) {
     window.bind("get_users", |event| {
         let window = event.get_window();
-        
+
         let Some(db) = get_db() else {
             let err = AppError::DependencyInjection(
                 ErrorValue::new(ErrorCode::InternalError, "Database not initialized")
@@ -577,7 +577,7 @@ pub fn setup_db_handlers(window: &mut webui::Window) {
             send_error_response(window, "db_response", &err);
             return;
         };
-        
+
         // Handle result and send appropriate response
         match db.get_all_users() {
             Ok(users) => {
@@ -602,12 +602,12 @@ pub fn setup_db_handlers(window: &mut webui::Window) {
 ### 1. Be Explicit About Errors
 
 ```rust
-// ❌ Bad: Swallowing errors
+// Bad: Swallowing errors
 fn get_user(id: i64) -> Option<User> {
     db.query(id).ok()  // Hides what went wrong
 }
 
-// ✅ Good: Explicit error types
+// Good: Explicit error types
 fn get_user(id: i64) -> AppResult<User> {
     db.query(id).map_err(|e| {
         AppError::Database(
@@ -621,15 +621,15 @@ fn get_user(id: i64) -> AppResult<User> {
 ### 2. Provide Context
 
 ```rust
-// ❌ Bad: Bare error
+// Bad: Bare error
 Err(AppError::Database(ErrorValue::new(
-    ErrorCode::DbQueryFailed, 
+    ErrorCode::DbQueryFailed,
     "Query failed"
 )))
 
-// ✅ Good: Contextualized error
+// Good: Contextualized error
 Err(AppError::Database(ErrorValue::new(
-    ErrorCode::DbQueryFailed, 
+    ErrorCode::DbQueryFailed,
     "Failed to get user by email"
 )
     .with_field("email")
@@ -642,7 +642,7 @@ Err(AppError::Database(ErrorValue::new(
 ### 3. Handle Errors at Appropriate Levels
 
 ```typescript
-// ❌ Bad: Handling too early
+// Bad: Handling too early
 async loadUsers() {
   const result = await getUsers();
   if (isErr(result)) {
@@ -652,21 +652,21 @@ async loadUsers() {
   // ...
 }
 
-// ✅ Good: Handle where it matters
+// Good: Handle where it matters
 async loadUsers() {
   const result = await getUsers();
-  
+
   // Let error service handle display
   const users = this.errorService.handleResult(result, {
     source: 'user-list'
   });
-  
+
   if (!users) {
     // Graceful degradation
     this.users = [];
     return;
   }
-  
+
   this.users = users;
 }
 ```
@@ -674,12 +674,12 @@ async loadUsers() {
 ### 4. Use Error Codes for Programmatic Handling
 
 ```typescript
-// ❌ Bad: String matching
+// Bad: String matching
 if (result.error.message.includes('not found')) {
   // ...
 }
 
-// ✅ Good: Code-based handling
+// Good: Code-based handling
 switch (result.error.code) {
   case ErrorCode.ResourceNotFound:
     this.showNotFoundPage();
@@ -707,7 +707,7 @@ fn handle_get_user(&self, id: i64) -> AppResult<UserResponse> {
             DomainError::NotFound => errors::not_found("User", id),
             DomainError::Invalid => errors::validation_failed("id", "Invalid user ID"),
         })?;
-    
+
     Ok(UserResponse::from(user))
 }
 ```
@@ -721,7 +721,7 @@ fn test_insert_user_validation_empty_name() {
     db.init().unwrap();
 
     let result = db.insert_user("", "test@example.com", "User", "Active");
-    
+
     assert!(result.is_err());
     if let Err(AppError::Validation(e)) = result {
         assert_eq!(e.field, Some("name".to_string()));
@@ -735,7 +735,7 @@ fn test_insert_user_validation_empty_name() {
 ```typescript
 it('should handle duplicate email error', async () => {
   const result = await createUser({ name: 'Test', email: 'existing@example.com' });
-  
+
   expect(isErr(result)).toBe(true);
   if (isErr(result)) {
     expect(result.error.code).toBe(ErrorCode.DbAlreadyExists);
@@ -808,7 +808,7 @@ async getUser(id: number): Promise<Result<User>> {
 
 ## Summary
 
-The "Errors as Values" pattern provides:
+The Errors as Values pattern provides:
 
 1. **Type Safety**: Errors are part of function signatures
 2. **Explicit Handling**: No hidden exceptions

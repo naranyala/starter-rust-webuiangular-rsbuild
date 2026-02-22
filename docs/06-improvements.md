@@ -45,6 +45,8 @@ docs/
 +-- 07-getting-started.md     # Getting started guide
 +-- 08-project-structure.md   # Project structure details
 +-- 09-errors-as-values.md    # Error handling guide
++-- 10-testing.md             # Testing guide
++-- 11-devtools.md            # DevTools documentation
 +-- api/                      # API documentation
 |   +-- backend/              # Backend API reference
 |   +-- frontend/             # Frontend API reference
@@ -327,9 +329,44 @@ Implement hot reload for frontend and backend during development.
 
 # Watches for:
 # - Rust file changes (cargo-watch)
-# - Frontend file changes (Rspack watch mode)
+# - Frontend file changes (Angular CLI watch)
 # - Config file changes
 ```
+
+## 13. DevTools Enhancements
+
+### Current Implementation
+The DevTools panel provides comprehensive system diagnostics with 11 tabs.
+
+### Suggested Enhancements
+
+#### Real-time Graphs
+Add real-time charts for:
+- CPU usage over time
+- Memory usage trends
+- Network traffic
+- Event frequency
+
+#### Performance Profiling
+Add profiling tools for:
+- Function call timing
+- Memory allocation tracking
+- Bundle size analysis
+- Load time breakdown
+
+#### Interactive Console
+Add a REPL-style console for:
+- Executing backend commands
+- Testing API endpoints
+- Running database queries
+- Debugging JavaScript
+
+#### Settings Management
+Add UI for:
+- Toggling feature flags
+- Adjusting log levels
+- Modifying window settings
+- Exporting/importing configuration
 
 ## Priority Matrix
 
@@ -342,8 +379,9 @@ Implement hot reload for frontend and backend during development.
 | Logging Structure | Medium | Low | 5 |
 | CI/CD Pipeline | High | Medium | 6 |
 | Dependency Management | Medium | Low | 7 |
-| Enhanced Modularity | Medium | High | 8 |
-| Asset Management | Low | Medium | 9 |
-| Environment Configs | Medium | Low | 10 |
-| Plugin System | High | High | 11 |
-| Hot Reload | Medium | High | 12 |
+| DevTools Enhancements | Medium | Medium | 8 |
+| Enhanced Modularity | Medium | High | 9 |
+| Asset Management | Low | Medium | 10 |
+| Environment Configs | Medium | Low | 11 |
+| Plugin System | High | High | 12 |
+| Hot Reload | Medium | High | 13 |

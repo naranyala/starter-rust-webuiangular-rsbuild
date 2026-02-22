@@ -1,6 +1,6 @@
 # Rust WebUI Angular Rsbuild Starter
 
-A production-ready desktop application starter combining Rust backend with Angular frontend, using WebUI for native window integration and Rsbuild for modern frontend bundling.
+A production-ready desktop application framework combining a Rust backend with an Angular frontend, using WebUI for native window integration and Angular CLI for modern frontend bundling.
 
 ## Quick Start
 
@@ -15,7 +15,7 @@ A production-ready desktop application starter combining Rust backend with Angul
 ./run.sh --build            # Build frontend and backend
 ./run.sh --build-frontend   # Build frontend only
 ./run.sh --build-rust       # Build backend only
-./run.sh --release          # Create release build
+./run.sh --release          # Create optimized release build
 ./run.sh --run              # Run existing build
 ./run.sh --clean            # Clean build artifacts
 ./run.sh --rebuild          # Clean and rebuild
@@ -26,7 +26,7 @@ A production-ready desktop application starter combining Rust backend with Angul
 ```bash
 cd frontend
 bun run dev                 # Start development server (port 4200)
-bun run build:rsbuild       # Production build
+bun run build               # Production build with Angular CLI
 bun run preview             # Preview production build
 ```
 
@@ -34,17 +34,18 @@ bun run preview             # Preview production build
 
 This project provides a complete desktop application framework with:
 
-- **Rust Backend**: High-performance native core with SQLite database, comprehensive error handling, and modular architecture
-- **Angular Frontend**: Modern MVVM-pattern UI with WinBox windowing, Rsbuild bundler, and reactive state management
+- **Rust Backend**: High-performance native core with SQLite database, comprehensive error handling, and layered architecture
+- **Angular Frontend**: Modern MVVM-pattern UI with WinBox windowing, Angular CLI bundler, and reactive state management
 - **WebUI Integration**: Native desktop windowing with bidirectional frontend-backend communication
 - **Production Build Pipeline**: Automated build, asset management, and distribution packaging
+- **DevTools Panel**: Comprehensive system diagnostics exposing backend and frontend metrics
 
 ## Technology Stack
 
 ### Backend
 
 - **Language**: Rust 2024 Edition
-- **Windowing**: webui-rs (WebUI 2.5.0-beta.4)
+- **Windowing**: webui-rs (WebUI)
 - **Database**: rusqlite 0.32 with bundled SQLite
 - **Serialization**: serde, serde_json, serde_yaml, rmp-serde, serde_cbor, toml
 - **Error Handling**: anyhow, thiserror
@@ -52,17 +53,16 @@ This project provides a complete desktop application framework with:
 - **System**: dirs, tempfile, notify, hostname, whoami, num_cpus
 - **Security**: base64, hmac, sha2, rand, jsonwebtoken, hex, md5
 - **Network**: url, reqwest
-- **Compression**: flate2, zstd, brotli, lz4_flex, snap, ascii85, punycode
-- **File Operations**: walkdir, image, arboard, ini, zip, tar
+- **Compression**: flate2, zstd, brotli, lz4_flex, snap
 
 ### Frontend
 
 - **Framework**: Angular 19.2
 - **Language**: TypeScript 5.5
-- **Bundler**: Rsbuild 1.7 (Rspack-based)
+- **Bundler**: Angular CLI with esbuild
 - **Runtime**: Bun 1.3
 - **Windowing**: WinBox 0.2.82
-- **State Management**: RxJS 7.8, Zone.js 0.15
+- **State Management**: RxJS 7.8, Zone.js 0.15, Angular Signals
 - **Styling**: Sass 1.97
 - **Code Quality**: Biome 2.4
 - **Testing**: Jasmine, Karma, Protractor
@@ -70,7 +70,7 @@ This project provides a complete desktop application framework with:
 ### Build System
 
 - **Backend**: Cargo with custom build.rs
-- **Frontend**: Rsbuild with Angular integration
+- **Frontend**: Angular CLI production builds
 - **Orchestration**: Bash scripts (run.sh, build-dist.sh, build-frontend.js)
 - **CI/CD Ready**: Cross-platform support (Windows, macOS, Linux)
 
@@ -89,23 +89,15 @@ This project provides a complete desktop application framework with:
 │   │   │   ├── logging/        # Logging system
 │   │   │   ├── config.rs       # Configuration loading
 │   │   │   └── event_bus.rs    # Event dispatch
-│   │   ├── presentation/       # WebUI handlers
-│   │   └── error.rs            # Error types
+│   │   └── presentation/       # WebUI handlers
 │   └── utils/                  # Utility modules
 │       ├── compression/        # Compression utilities
 │       ├── crypto/             # Cryptography functions
-│       ├── encoding/           # Encoding/decoding
-│       ├── file_ops/           # File operations
-│       ├── network/            # Network utilities
-│       ├── security/           # Security utilities
-│       ├── serialization/      # Serialization helpers
-│       ├── system/             # System information
-│       └── validation/         # Validation utilities
+│       └── system/             # System information
 │
 ├── frontend/                   # Angular frontend
 │   ├── src/                    # Source code
 │   │   ├── main.ts             # Bootstrap and global handlers
-│   │   ├── winbox-loader.ts    # WinBox initialization
 │   │   ├── index.html          # Application template
 │   │   ├── environments/       # Environment configurations
 │   │   ├── models/             # Data interfaces (M in MVVM)
@@ -113,39 +105,27 @@ This project provides a complete desktop application framework with:
 │   │   │   ├── logging.viewmodel.ts
 │   │   │   ├── event-bus.viewmodel.ts
 │   │   │   ├── window-state.viewmodel.ts
+│   │   │   ├── devtools.service.ts
 │   │   │   └── api-client.ts
 │   │   ├── views/              # Components (V in MVVM)
 │   │   │   ├── app.component.ts
-│   │   │   ├── home/
-│   │   │   ├── demo/
-│   │   │   └── shared/
-│   │   │       └── error-modal.component.ts
+│   │   │   └── devtools/       # DevTools components
 │   │   ├── core/               # Shared infrastructure
 │   │   │   ├── global-error.service.ts
-│   │   │   ├── global-error.handler.ts
-│   │   │   └── errors/
-│   │   │       └── result.ts
-│   │   ├── types/              # TypeScript type definitions
+│   │   │   └── global-error.handler.ts
 │   │   └── assets/             # Static assets
 │   ├── docs/                   # Frontend documentation
 │   ├── e2e/                    # End-to-end tests
 │   ├── angular.json            # Angular configuration
-│   ├── rsbuild.config.ts       # Rsbuild bundler config
 │   ├── package.json            # Dependencies and scripts
-│   ├── tsconfig.json           # TypeScript configuration
-│   └── biome.json              # Code quality config
+│   └── tsconfig.json           # TypeScript configuration
 │
 ├── config/                     # Runtime configuration
 │   └── app.config.toml         # Application settings
 │
 ├── static/                     # Runtime static assets
 │   ├── js/                     # JavaScript files
-│   │   ├── main.js             # Main application bundle
-│   │   ├── webui.js            # WebUI bridge
-│   │   └── winbox.min.js       # WinBox library
 │   └── css/                    # Stylesheets
-│       ├── styles.css          # Application styles
-│       └── winbox.min.css      # WinBox styles
 │
 ├── dist/                       # Distribution output
 │   ├── index.html              # Main HTML file
@@ -156,9 +136,7 @@ This project provides a complete desktop application framework with:
 │   └── release/                # Release builds
 │
 ├── thirdparty/                 # Vendored sources
-│   └── webui-c-src/            # WebUI C source and examples
-│
-├── frontend-backup/            # Historical frontend reference
+│   └── webui-c-src/            # WebUI C source
 │
 ├── docs/                       # Documentation
 │   ├── 01-introduction.md      # Project overview
@@ -169,7 +147,8 @@ This project provides a complete desktop application framework with:
 │   ├── 06-improvements.md      # Suggested enhancements
 │   ├── 07-getting-started.md   # Getting started guide
 │   ├── 08-project-structure.md # Repository layout
-│   └── 09-errors-as-values.md  # Error handling guide
+│   ├── 09-errors-as-values.md  # Error handling guide
+│   └── 10-testing.md           # Testing guide
 │
 ├── build.rs                    # Rust build script
 ├── Cargo.toml                  # Rust dependencies
@@ -177,15 +156,14 @@ This project provides a complete desktop application framework with:
 ├── run.sh                      # Master build/run script
 ├── build-dist.sh               # Distribution package builder
 ├── build-frontend.js           # Frontend build orchestration
-├── post-build.sh               # Post-build processing
-└── README.md                   # This file
+└── post-build.sh               # Post-build processing
 ```
 
 ## Architecture
 
 ### Backend Architecture
 
-The Rust backend follows a layered architecture inspired by Domain-Driven Design:
+The Rust backend follows a layered architecture:
 
 1. **Domain Layer**: Core business entities and domain logic
 2. **Application Layer**: Use-case orchestration and handlers
@@ -194,12 +172,21 @@ The Rust backend follows a layered architecture inspired by Domain-Driven Design
 
 ### Frontend Architecture
 
-The Angular frontend uses the MVVM (Model-View-ViewModel) pattern:
+The Angular frontend uses the MVVM pattern:
 
 1. **Models**: Pure data interfaces and type definitions
 2. **ViewModels**: Business logic and state management services
 3. **Views**: Angular components for UI rendering
 4. **Core**: Cross-cutting concerns (error handling, events)
+
+### DevTools Architecture
+
+The DevTools panel provides comprehensive system diagnostics:
+
+1. **DevTools Service**: Gathers metrics from backend and frontend
+2. **DevTools Component**: Main tabbed interface with 11 panels
+3. **Backend Endpoints**: System info, memory, process, network, database, config APIs
+4. **Auto-Refresh**: 2-second interval updates for dynamic data
 
 ### Communication Pattern
 
@@ -212,14 +199,14 @@ Rust Backend --[JSON]--> window.run_js() --> Frontend JS
 
 ## Build System
 
-### Frontend Build (Rsbuild)
+### Frontend Build (Angular CLI)
 
-Rsbuild is a modern bundler built on Rspack, providing:
+Angular CLI provides:
 
-- Fast cold builds (~20s for full build)
-- Hot Module Replacement (HMR) for development
-- Optimized production bundles
-- TypeScript and Sass support out of the box
+- Production-optimized builds with AOT compilation
+- TypeScript and Sass support
+- Bundle optimization and tree-shaking
+- Source maps for debugging
 
 ### Backend Build (Cargo)
 
@@ -270,7 +257,7 @@ file = "logs/application.log"
 
 ### Frontend Configuration
 
-Edit `frontend/rsbuild.config.ts` to customize:
+Edit `frontend/angular.json` to customize:
 
 - Build output paths
 - Asset handling
@@ -326,7 +313,7 @@ The project implements "Errors as Values" pattern:
 ### Frontend
 
 - Global error capture and classification
-- Severity-based error handling (Critical, Major, Minor, Info)
+- Severity-based error handling
 - User-friendly error modal with technical details
 - Error history tracking and statistics
 
@@ -339,8 +326,8 @@ See `docs/09-errors-as-values.md` for detailed guide.
 Configurable logging with multiple levels:
 
 ```rust
-logger.info("Operation completed", { key: "value" });
-logger.error("Operation failed", { error: "details" });
+log::info!("Operation completed");
+log::error!("Operation failed: {}", error);
 ```
 
 Logs written to console and file (configurable).
@@ -350,11 +337,9 @@ Logs written to console and file (configurable).
 Structured logging with contexts:
 
 ```typescript
-logger.info(LogContext.App, 'Component', 'Message', { data });
-logger.error(LogContext.Component, 'Service', 'Error', error);
+logger.info('Component initialized', { data });
+logger.error('Operation failed', error);
 ```
-
-View logs via LogViewer component in UI.
 
 ## Testing
 
@@ -376,7 +361,7 @@ bun run e2e           # End-to-end tests
 
 ### Development
 
-Run directly with `./run.sh` for development with hot reload.
+Run directly with `./run.sh` for development.
 
 ### Production
 
@@ -404,7 +389,7 @@ The build system supports:
 cd frontend
 rm -rf dist node_modules
 bun install
-bun run build:rsbuild
+bun run build
 ```
 
 ### Runtime Errors
@@ -433,57 +418,33 @@ Complete documentation is available in the `docs/` directory:
 - [07-getting-started.md](docs/07-getting-started.md) - Installation and setup
 - [08-project-structure.md](docs/08-project-structure.md) - Repository layout
 - [09-errors-as-values.md](docs/09-errors-as-values.md) - Error handling pattern
+- [10-testing.md](docs/10-testing.md) - Testing guide
 
-Frontend-specific documentation:
+## DevTools Panel
 
-- `frontend/docs/ERROR_HANDLING_COMPLETE.md` - Frontend error handling
-- `frontend/docs/RSBUILD_MIGRATION.md` - Rsbuild migration guide
+The DevTools panel provides comprehensive system diagnostics accessible from the bottom panel:
 
-## Potential Improvements
+### Features
 
-The following suggestions focus on project structure improvements:
+- **Overview**: Quick summary of system status
+- **System**: OS, hostname, CPU cores, Rust version
+- **Memory**: Visual memory usage with statistics
+- **Process**: PID, CPU%, memory, threads, uptime
+- **Network**: Network interfaces with IP/MAC addresses
+- **Database**: DB path, size, tables, connections
+- **Config**: Application configuration settings
+- **Performance**: FPS, DOM nodes, JS heap, event listeners
+- **Events**: Filterable event log (errors, warnings, info)
+- **Bindings**: Backend function binding status
+- **Windows**: Open WinBox windows with state
 
-### Directory Organization
+### Usage
 
-1. **Consolidate Backup Directories**: The `frontend-backup/` directory should be moved to an `archives/` or `historical/` directory at the root level to clearly separate historical reference code from active development. Consider removing if no longer needed for migration safety.
-
-2. **Separate Build Scripts**: Create a dedicated `scripts/` directory at the root level for build orchestration scripts (run.sh, build-dist.sh, build-frontend.js, post-build.sh) to separate build infrastructure from source code.
-
-3. **Unified Configuration**: Move `frontend/angular.json`, `frontend/tsconfig*.json`, and `frontend/biome.json` to a root-level `config/` directory with frontend-specific subdirectory to centralize all configuration files.
-
-4. **Shared Types Directory**: Create a `shared/` or `contracts/` directory at the root level for shared type definitions and protocol specifications that both backend and frontend consume, reducing duplication and ensuring type safety across the boundary.
-
-5. **Plugin Structure**: The `plugins/` directory exists but appears incomplete. Either complete the plugin architecture with proper documentation and examples, or remove to reduce confusion. Consider moving plugin examples to `examples/` directory.
-
-6. **Core Package Separation**: The `core/backend/` and `core/frontend/` directories suggest a monorepo structure. If these are meant to be reusable packages, consider proper workspace configuration with Cargo workspaces for Rust and npm workspaces for TypeScript.
-
-7. **Test Organization**: Move all test configuration and test files to a unified `tests/` directory at the root level, with `tests/backend/` and `tests/frontend/` subdirectories, rather than scattering test configs throughout the codebase.
-
-8. **Documentation Consolidation**: The documentation exists in both `docs/` and `frontend/docs/`. Consider consolidating into a single `docs/` directory with clear subdirectories (docs/backend/, docs/frontend/, docs/general/) to avoid confusion about where to find or add documentation.
-
-9. **Asset Management**: The `static/` directory serves as runtime output, but `frontend/src/assets/` exists for source assets. Consider renaming `static/` to `runtime-assets/` or `dist-assets/` to clarify its purpose as build output rather than source.
-
-10. **Thirdparty Management**: The `thirdparty/` directory contains vendored WebUI sources. Consider using Git submodules or proper dependency management instead of vendoring, unless modifications to upstream sources are required.
-
-11. **Environment Configuration**: Frontend has `environments/` directory but backend uses single `app.config.toml`. Consider unified environment configuration strategy with `config/dev.toml`, `config/prod.toml`, etc.
-
-12. **Generated Files**: Create a `.generated/` or `build-output/` directory to clearly separate generated files (like embedded_frontend.rs from build.rs) from hand-written source code.
-
-### Build System
-
-13. **Unified Build Configuration**: Consider migrating to a unified build system like Nx or Turborepo that can orchestrate both Rust and TypeScript builds with dependency tracking and incremental builds.
-
-14. **CI/CD Configuration**: Add `.github/workflows/` or `.gitlab-ci.yml` for automated testing and deployment pipelines.
-
-15. **Docker Support**: Add `Dockerfile` and `docker-compose.yml` for containerized development and deployment.
-
-### Code Organization
-
-16. **Barrel Exports**: Add `mod.rs` or `index.ts` barrel files in each directory to clarify public API surface and improve IDE autocomplete.
-
-17. **Feature Flags**: Use Cargo features to enable/disable optional functionality rather than including all dependencies unconditionally.
-
-18. **Workspace Members**: If core/backend and core/frontend are meant to be separate crates, configure them as workspace members in root Cargo.toml.
+1. Click the DevTools tab in the bottom panel
+2. Auto-refresh is enabled by default (2-second interval)
+3. Toggle auto-refresh with the play/pause button
+4. Export data as JSON with the download button
+5. Panel expands to 50% screen height when DevTools is active
 
 ## License
 

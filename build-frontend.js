@@ -178,14 +178,14 @@ async function buildFrontend() {
     }
     logger.endStep(true);
 
-    // Step 2: Build with Rsbuild
-    logger.startStep('rsbuild', 'Running Rsbuild build');
+    // Step 2: Build with Angular CLI (AOT compilation)
+    logger.startStep('angular-build', 'Running Angular CLI build (AOT)');
     try {
       const buildStart = Date.now();
-      // Use bunx to run rsbuild (will use local if available, global otherwise)
-      execSync('bunx --bun @rsbuild/core build', { stdio: VERBOSE ? 'inherit' : 'pipe', cwd: frontendDir });
+      // Angular CLI build with AOT (default in production mode)
+      execSync('bun run ng build --configuration production --output-path=dist', { stdio: VERBOSE ? 'inherit' : 'pipe', cwd: frontendDir });
       const buildDuration = Date.now() - buildStart;
-      logger.stepLog(`Rsbuild completed in ${buildDuration}ms`);
+      logger.stepLog(`Angular CLI build completed in ${buildDuration}ms`);
     } catch (buildError) {
       logger.stepLog(`Build failed: ${buildError.message}`, 'ERROR');
       logger.endStep(false, buildError);
@@ -200,39 +200,29 @@ async function buildFrontend() {
     const distStaticJs = path.join(rootDist, 'static', 'js');
     const distStaticCss = path.join(rootDist, 'static', 'css');
 
-    // Rsbuild may output to dist/browser/ or dist/static/js/ - check both
+    // Angular CLI outputs to dist/browser/
     let browserDir = path.join(rsbuildOutputDir, 'browser');
-    let rsbuildJsDir = path.join(rsbuildOutputDir, 'static', 'js');
-    let rsbuildCssDir = path.join(rsbuildOutputDir, 'static', 'css');
-    
+    let rsbuildJsDir = browserDir;
+    let rsbuildCssDir = browserDir;
+
     // Check if browser directory exists (Angular build output)
     const hasBrowserDir = await pathExists(browserDir);
-    if (hasBrowserDir) {
-      // Angular-style output: dist/browser/
-      rsbuildJsDir = browserDir;
-      rsbuildCssDir = browserDir;
+    if (!hasBrowserDir) {
+      // Fallback to root dist if browser/ doesn't exist
+      rsbuildJsDir = rsbuildOutputDir;
+      rsbuildCssDir = rsbuildOutputDir;
     }
 
     // Find JS files in Rsbuild output
     const allJsFiles = await fs.readdir(rsbuildJsDir);
-    // Look for main.*.js files (Angular build output)
-    const entryJsFiles = allJsFiles.filter(f => 
+    // Angular CLI outputs: main-*.js (entry point) and chunk files like *.js
+    const entryJsFiles = allJsFiles.filter(f =>
       f.startsWith('main-') && f.endsWith('.js') && !f.endsWith('.map')
     );
-    // Match chunk files: uppercase or lowercase hex hashes (e.g., vendors.59a80c68.js or 613.ebba8a50dba2d481.js)
+    // Match chunk files: hex hashes (e.g., 613.ebba8a50dba2d481.js or vendors.59a80c68.js)
     const chunkFiles = allJsFiles.filter(
       f => /^[a-zA-Z0-9]+\.[a-f0-9]+\.js$/.test(f) && !f.endsWith('.map')
     );
-
-    if (entryJsFiles.length === 0) {
-      // Fallback: look for any *.js file that's not polyfills or scripts
-      const mainFiles = allJsFiles.filter(f => 
-        f.startsWith('main') && f.endsWith('.js') && !f.endsWith('.map')
-      );
-      if (mainFiles.length > 0) {
-        entryJsFiles.push(...mainFiles);
-      }
-    }
 
     if (entryJsFiles.length === 0) {
       throw new Error('No entry JS file found in Rsbuild output. Available files: ' + allJsFiles.join(', '));
@@ -375,22 +365,32 @@ async function buildFrontend() {
     if (await pathExists(rsbuildIndex)) {
       // Read the index.html and fix paths
       let htmlContent = await fs.readFile(rsbuildIndex, 'utf-8');
-      
+
       // Fix base href
       htmlContent = htmlContent.replace(/<base href="[^"]*">/, '<base href="./">');
-      
+
       // Fix paths: add ./ prefix where missing
       // Handle: static/css/... -> ./static/css/...
       htmlContent = htmlContent.replace(/href="static\//g, 'href="./static/');
       htmlContent = htmlContent.replace(/src="static\//g, 'src="./static/');
-      
+
       // Handle: /static/js/... -> ./static/js/...
       htmlContent = htmlContent.replace(/src="\/static\//g, 'src="./static/');
-      
-      // Fix favicon path  
+
+      // Handle: href="styles-*.css" -> href="./static/css/styles-*.css"
+      htmlContent = htmlContent.replace(/href="styles-([a-zA-Z0-9-]+\.css)"/g, 'href="./static/css/styles-$1"');
+
+      // Handle: src="*.js" (bundle files) -> src="./static/js/*.js"
+      // Match: main-*.js, polyfills-*.js, scripts-*.js, and chunk files
+      htmlContent = htmlContent.replace(/src="([a-zA-Z0-9-]+\.[a-f0-9]+\.js)"/g, 'src="./static/js/$1"');
+      htmlContent = htmlContent.replace(/src="(main-[a-zA-Z0-9]+\.js)"/g, 'src="./static/js/$1"');
+      htmlContent = htmlContent.replace(/src="(polyfills-[a-zA-Z0-9]+\.js)"/g, 'src="./static/js/$1"');
+      htmlContent = htmlContent.replace(/src="(scripts-[a-zA-Z0-9]+\.js)"/g, 'src="./static/js/$1"');
+
+      // Fix favicon path
       htmlContent = htmlContent.replace(/href="favicon.ico"/g, 'href="./favicon.ico"');
       htmlContent = htmlContent.replace(/href="\.\/favicon.ico"/g, 'href="./favicon.ico"');
-      
+
       await fs.writeFile(rootIndexHtml, htmlContent);
       logger.stepLog('Copied and fixed index.html paths');
     } else {

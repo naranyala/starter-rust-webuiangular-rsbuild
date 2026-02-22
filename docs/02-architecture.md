@@ -83,6 +83,7 @@ Pure data interfaces and type definitions.
 - log.model.ts: Logging interfaces
 - error.model.ts: Error handling types
 - api.model.ts: API client types
+- devtools.model.ts: DevTools data models
 
 ### ViewModels (frontend/src/viewmodels/)
 
@@ -93,6 +94,7 @@ Business logic and state management services.
 - event-bus.viewmodel.ts: Event bus implementation
 - window-state.viewmodel.ts: Window state management
 - api-client.ts: Backend API client
+- devtools.service.ts: DevTools data gathering service
 
 ### Views (frontend/src/views/)
 
@@ -105,6 +107,9 @@ Angular components (presentation layer).
 - demo/: Demo components
 - shared/: Shared components
   - error-modal.component.ts: Error display component
+- devtools/: DevTools components
+  - devtools.component.ts: Main DevTools container
+  - devtools-panels.component.ts: Individual panel components
 
 ### Core (frontend/src/core/)
 
@@ -116,6 +121,45 @@ Cross-cutting concerns and shared infrastructure.
   - result.ts: Result type implementation
 - base/: Base classes and utilities
 - plugins/: Plugin abstractions
+
+## DevTools Architecture
+
+The DevTools panel provides comprehensive system diagnostics:
+
+### Service Layer (devtools.service.ts)
+
+- Gathers system information from backend endpoints
+- Collects frontend performance metrics
+- Manages event logging and history
+- Provides auto-refresh functionality
+- Exposes reactive signals for UI consumption
+
+### Component Layer
+
+- **DevToolsComponent**: Main container with tabs and header
+- **Panel Components**: 11 specialized panels for different diagnostics
+  - DevToolsOverviewComponent: Summary dashboard
+  - DevToolsSystemComponent: System information
+  - DevToolsMemoryComponent: Memory visualization
+  - DevToolsProcessComponent: Process details
+  - DevToolsNetworkComponent: Network interfaces
+  - DevToolsDatabaseComponent: Database status
+  - DevToolsConfigComponent: Configuration viewer
+  - DevToolsPerformanceComponent: Performance metrics
+  - DevToolsEventsComponent: Event log
+  - DevToolsBindingsComponent: Backend bindings status
+  - DevToolsWindowsComponent: Window state
+  - DevToolsAboutComponent: About information
+
+### Backend Endpoints
+
+- get_system_info: Hostname, username, OS, CPU count
+- get_memory_info: Total, used, free memory
+- get_process_info: PID, CPU%, memory, threads, uptime
+- get_network_info: Network interfaces
+- get_database_info: Database path, size, tables
+- get_config_info: Application configuration
+- get_logs: Application logs
 
 ## Communication Flow
 

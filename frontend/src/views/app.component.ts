@@ -9,11 +9,12 @@ import { WindowStateViewModel } from '../viewmodels/window-state.viewmodel';
 import { ErrorModalComponent } from './shared/error-modal.component';
 import { ConnectionMonitorService } from '../viewmodels/connection-monitor.service';
 import { ViewportService } from '../viewmodels/viewport.service';
+import { DevToolsComponent } from './devtools/devtools.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, ErrorModalComponent],
+  imports: [CommonModule, ErrorModalComponent, DevToolsComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
@@ -21,15 +22,27 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly globalErrorService = inject(GlobalErrorService);
   private readonly winboxService = inject(WinBoxService);
   private readonly logger = getLogger('app.component');
-  
-  private readonly eventBus: EventBusViewModel<Record<string, unknown>>;
-  private readonly windowState: WindowStateViewModel;
-  private readonly connectionMonitor: ConnectionMonitorService;
-  private readonly viewportService: ViewportService;
+  private readonly eventBus = inject(EventBusViewModel<Record<string, unknown>>);
+  private readonly windowState = inject(WindowStateViewModel);
+  private readonly connectionMonitor = inject(ConnectionMonitorService);
+  private readonly viewportService = inject(ViewportService);
 
   searchQuery = signal('');
   windowEntries = signal<WindowEntry[]>([]);
   activeBottomTab = signal<string>('overview');
+
+  wsDetailsExpanded = signal(false);
+  wsConnectionState = signal('disconnected');
+  wsPort = signal('0');
+  wsLastError = signal('');
+  wsLatency = signal(0);
+  wsUptime = signal(0);
+  wsSuccessfulCalls = signal(0);
+  wsTotalCalls = signal(0);
+
+  readonly topCollapsed = this.viewportService.topCollapsed;
+  readonly bottomCollapsed = this.viewportService.bottomCollapsed;
+  readonly connectionStats = this.connectionMonitor.stats;
 
   bottomPanelTabs: BottomPanelTab[] = [
     { id: 'overview', label: 'Overview', icon: '📊', content: 'System overview' },
@@ -37,6 +50,7 @@ export class AppComponent implements OnInit, OnDestroy {
     { id: 'connection', label: 'Connection', icon: '🔗', content: 'Connection stats' },
     { id: 'events', label: 'Events', icon: '🔔', content: 'Recent events' },
     { id: 'info', label: 'Info', icon: 'ℹ️', content: 'Application info' },
+    { id: 'devtools', label: 'DevTools', icon: '🔧', content: 'System diagnostics' },
   ];
 
   cards: Card[] = TECH_CARDS;
@@ -49,51 +63,91 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   });
 
-  // Expose services for template access
-  readonly topCollapsed = this.viewportService.topCollapsed;
-  readonly bottomCollapsed = this.viewportService.bottomCollapsed;
-  readonly connectionStats = this.connectionMonitor.stats;
-
   private existingBoxes: WinBoxInstance[] = [];
   private appReadyUnsubscribe: (() => void) | null = null;
   private windowIdByCardId = new Map<number, string>();
   private resizeHandler: (() => void) | null = null;
 
-  constructor(
-    eventBus: EventBusViewModel<Record<string, unknown>>,
-    windowState: WindowStateViewModel,
-    connectionMonitor: ConnectionMonitorService,
-    viewportService: ViewportService
-  ) {
-    this.eventBus = eventBus;
-    this.windowState = windowState;
-    this.connectionMonitor = connectionMonitor;
-    this.viewportService = viewportService;
-  }
-
   ngOnInit(): void {
-    // Set up window resize handler
+    this.windowState.init();
+    this.initWebSocketMonitor();
+
     if (typeof window !== 'undefined') {
       this.resizeHandler = () => {
-        // Could trigger re-layout here if needed
+        this.resizeAllWindows();
       };
       window.addEventListener('resize', this.resizeHandler);
     }
 
-    // Subscribe to app ready
-    this.appReadyUnsubscribe = this.eventBus.subscribe('app:ready', () => {
-      this.logger.info('Application ready');
-    });
+    this.appReadyUnsubscribe = this.eventBus.subscribe(
+      'app:ready',
+      (payload: unknown) => {
+        const p = payload as { timestamp: number };
+        this.logger.info('Received app ready event', { timestamp: p.timestamp });
+      },
+      { replayLast: true }
+    );
 
-    this.logger.info('AppComponent initialized');
+    // Hide loading indicator
+    this.hideLoadingIndicator();
+
+    this.logger.info('Application ready');
+    this.closeAllBoxes();
+
+    const winboxAvailable = this.winboxService.isAvailable() || !!(window as any).WinBox;
+
+    if (typeof document !== 'undefined') {
+      (window as any).__WINBOX_DEBUG = {
+        serviceHasIt: this.winboxService.isAvailable(),
+        windowHasIt: !!(window as any).WinBox,
+        winboxConstructor: (window as any).WinBox || null,
+        checked: new Date().toISOString(),
+      };
+
+      if (!winboxAvailable) {
+        this.logger.error('WinBox is NOT available! window.WinBox =', (window as any).WinBox);
+        const debugDiv = document.createElement('div');
+        debugDiv.style.cssText =
+          'position:fixed;top:0;left:0;background:red;color:white;padding:10px;z-index:99999;font-family:monospace;';
+        debugDiv.innerHTML = `⚠️ WinBox NOT loaded! window.WinBox = ${(window as any).WinBox}`;
+        document.body.appendChild(debugDiv);
+      } else {
+        this.logger.info('WinBox is available', {
+          serviceHasIt: this.winboxService.isAvailable(),
+          windowHasIt: !!(window as any).WinBox,
+        });
+      }
+    }
+
+    this.logger.info('App component initialized', { cardsCount: this.cards.length });
   }
 
-  private fuzzyMatch(text: string, query: string): boolean {
-    let queryIndex = 0;
-    for (let i = 0; i < text.length && queryIndex < query.length; i++) {
-      if (text[i] === query[queryIndex]) queryIndex++;
+  private initWebSocketMonitor(): void {
+    this.wsConnectionState.set('connected');
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('webui:status', ((event: CustomEvent) => {
+        const detail = event.detail;
+        if (detail?.state) {
+          this.wsConnectionState.set(detail.state);
+        }
+        if (detail?.detail?.port) {
+          this.wsPort.set(String(detail.detail.port));
+        }
+        if (detail?.detail?.error) {
+          this.wsLastError.set(detail.detail.error);
+        }
+      }) as EventListener);
     }
-    return queryIndex === query.length;
+  }
+
+  private hideLoadingIndicator(): void {
+    if (typeof document !== 'undefined') {
+      const loadingEl = document.getElementById('loading');
+      if (loadingEl) {
+        loadingEl.style.display = 'none';
+      }
+    }
   }
 
   onSearch(event: Event): void {
@@ -110,14 +164,12 @@ export class AppComponent implements OnInit, OnDestroy {
   toggleTop(): void {
     this.viewportService.toggleTop();
     this.eventBus.publish('ui:top-panel:toggled', { collapsed: this.topCollapsed() });
-    // Wait for CSS transition (300ms) + small buffer to ensure DOM is updated
     setTimeout(() => this.resizeAllWindows(), 320);
   }
 
   toggleBottom(): void {
     this.viewportService.toggleBottom();
     this.eventBus.publish('ui:bottom-panel:toggled', { collapsed: this.bottomCollapsed() });
-    // Wait for CSS transition (300ms) + small buffer to ensure DOM is updated
     setTimeout(() => this.resizeAllWindows(), 320);
   }
 
@@ -126,7 +178,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.activeBottomTab.set(tabId);
     if (this.bottomCollapsed()) this.bottomCollapsed.set(false);
     this.eventBus.publish('ui:bottom-panel:tab-changed', { tabId });
-    // Wait for CSS transition (300ms) + small buffer to ensure DOM is updated
     setTimeout(() => this.resizeAllWindows(), 320);
   }
 
@@ -155,77 +206,8 @@ export class AppComponent implements OnInit, OnDestroy {
     return `${seconds}s`;
   }
 
-  private initWebSocketMonitor(): void {
-    this.wsConnectionState.set('connected');
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('webui:status', ((event: CustomEvent) => {
-        const detail = event.detail;
-        if (detail?.state) {
-          this.wsConnectionState.set(detail.state);
-        }
-        if (detail?.detail?.port) {
-          this.wsPort.set(String(detail.detail.port));
-        }
-        if (detail?.detail?.error) {
-          this.wsLastError.set(detail.detail.error);
-        }
-      }) as EventListener);
-    }
-  }
-
   minimizedWindowCount(): number {
     return this.windowEntries().filter((entry) => entry.minimized).length;
-  }
-
-  ngOnInit(): void {
-    this.windowState.init();
-    this.initWebSocketMonitor();
-    this.appReadyUnsubscribe = this.eventBus.subscribe(
-      'app:ready',
-      (payload: unknown) => {
-        const p = payload as { timestamp: number };
-        this.logger.info('Received app ready event', { timestamp: p.timestamp });
-      },
-      { replayLast: true }
-    );
-    this.closeAllBoxes();
-
-    // Verify WinBox is available - check both service and direct window access
-    const winboxAvailable = this.winboxService.isAvailable() || !!(window as any).WinBox;
-
-    // Add debug info to document for troubleshooting
-    if (typeof document !== 'undefined') {
-      (window as any).__WINBOX_DEBUG = {
-        serviceHasIt: this.winboxService.isAvailable(),
-        windowHasIt: !!(window as any).WinBox,
-        winboxConstructor: (window as any).WinBox || null,
-        checked: new Date().toISOString(),
-      };
-
-      if (!winboxAvailable) {
-        this.logger.error('WinBox is NOT available! window.WinBox =', (window as any).WinBox);
-        // Create visible debug element
-        const debugDiv = document.createElement('div');
-        debugDiv.style.cssText =
-          'position:fixed;top:0;left:0;background:red;color:white;padding:10px;z-index:99999;font-family:monospace;';
-        debugDiv.innerHTML = `⚠️ WinBox NOT loaded! window.WinBox = ${(window as any).WinBox}`;
-        document.body.appendChild(debugDiv);
-      } else {
-        this.logger.info('WinBox is available', {
-          serviceHasIt: this.winboxService.isAvailable(),
-          windowHasIt: !!(window as any).WinBox,
-        });
-      }
-    }
-
-    // Listen for window resize events
-    if (typeof window !== 'undefined') {
-      this.resizeHandler = () => this.resizeAllWindows();
-      window.addEventListener('resize', this.resizeHandler);
-    }
-
-    this.logger.info('App component initialized', { cardsCount: this.cards.length });
   }
 
   ngOnDestroy(): void {

@@ -1,6 +1,8 @@
 
 # Rust build output
 target/
+dist/
+static/
 
 frontend-backup/dist
 frontend-backup/node_modules

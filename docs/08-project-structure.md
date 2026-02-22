@@ -6,14 +6,8 @@
 .
 +-- src/                    # Active Rust application (main entry)
 +-- frontend/               # Active Angular workspace (MVVM)
-+-- core/                   # Reusable backend/frontend core packages
-+-- plugins/                # Plugin extension area
-+-- apps/                   # Application entrypoint crates
-+-- shared/                 # Shared protocol/type boundaries
 +-- config/                 # Runtime configuration
 +-- static/                 # Runtime static JS/CSS assets
-+-- frontend-origin/        # Historical frontend reference
-+-- frontend/src-origin/    # Pre-MVVM frontend snapshot
 +-- thirdparty/             # Vendored upstream sources
 +-- dist/                   # Distribution output
 +-- target/                 # Cargo build output
@@ -53,6 +47,12 @@ This follows a layered model (Domain-Driven Design inspired):
   - src/core/infrastructure/event_bus.rs: Backend event dispatch plumbing
 - src/core/presentation/: Presentation boundary
   - src/core/presentation/webui/: WebUI-facing handlers and bridge surface
+    - handlers/db_handlers.rs: Database operation handlers
+    - handlers/sysinfo_handlers.rs: System information handlers
+    - handlers/logging_handlers.rs: Logging handlers
+    - handlers/event_bus_handlers.rs: Event bus handlers
+    - handlers/window_state_handler.rs: Window state management
+    - handlers/ui_handlers.rs: General UI handlers
 - src/core/error.rs: Centralized error types
 
 ### Utilities (src/utils/)
@@ -76,7 +76,6 @@ These modules keep infrastructure-level helper logic out of business layers.
 ```
 frontend/src/
 +-- main.ts                    # Angular bootstrap and global startup wiring
-+-- winbox-loader.ts           # WinBox runtime loader
 +-- environments/              # Environment configs (dev/prod)
 +-- types/                     # TypeScript declarations
 +-- polyfills.ts               # Angular polyfills
@@ -89,6 +88,7 @@ frontend/src/
 |   +-- log.model.ts           # Logging interfaces
 |   +-- error.model.ts         # Error handling types
 |   +-- api.model.ts           # API client types
+|   +-- devtools.model.ts      # DevTools data models
 |
 +-- viewmodels/                # VM - Business logic and state management
 |   +-- index.ts               # Barrel export
@@ -97,16 +97,17 @@ frontend/src/
 |   +-- event-bus.viewmodel.ts # Event bus implementation
 |   +-- window-state.viewmodel.ts # Window state management
 |   +-- api-client.ts          # Backend API client
+|   +-- devtools.service.ts    # DevTools data gathering service
+|   +-- connection-monitor.service.ts # Connection monitoring
+|   +-- viewport.service.ts    # Viewport management
 |
 +-- views/                     # V - Angular components
 |   +-- app.component.ts       # Main shell component
-|   +-- app.module.ts          # Angular module
-|   +-- app-routing.module.ts  # Routing configuration
-|   +-- home/
-|   |   +-- home.component.ts
-|   +-- demo/
-|   |   +-- demo.component.ts
-|   |   +-- error-handling-demo.component.ts
+|   +-- app.component.html     # Main template
+|   +-- app.component.css      # Main styles
+|   +-- devtools/              # DevTools components
+|   |   +-- devtools.component.ts       # Main DevTools container
+|   |   +-- devtools-panels.component.ts # Panel components
 |   +-- shared/
 |       +-- error-modal.component.ts
 |
@@ -116,6 +117,7 @@ frontend/src/
     +-- global-error.handler.ts
     +-- errors/
         +-- result.ts
+    +-- winbox.service.ts      # WinBox window service
 ```
 
 ### MVVM Pattern Explanation
@@ -123,19 +125,19 @@ frontend/src/
 **Models (models/):**
 - Pure data interfaces and type definitions
 - No business logic, only data shape contracts
-- Examples: Card, WindowEntry, LogEntry
+- Examples: Card, WindowEntry, LogEntry, DevToolsData
 
 **ViewModels (viewmodels/):**
 - Business logic and state management services
 - Angular services decorated with @Injectable
 - Handle data transformation, state, and communication
-- Examples: LoggingViewModel, EventBusViewModel, WindowStateViewModel
+- Examples: LoggingViewModel, EventBusViewModel, WindowStateViewModel, DevToolsService
 
 **Views (views/):**
 - Angular components (presentation layer)
 - Handle UI rendering and user interaction
 - Consume ViewModels via dependency injection
-- Examples: AppComponent, DemoComponent, HomeComponent
+- Examples: AppComponent, DevToolsComponent, ErrorModalComponent
 
 **Core (core/):**
 - Cross-cutting concerns
@@ -149,52 +151,13 @@ frontend/src/
 - frontend/tsconfig.json, frontend/tsconfig.app.json, frontend/tsconfig.spec.json: TypeScript configs
 - frontend/biome.json: Lint/format policy
 - frontend/e2e/: End-to-end testing config
+- frontend/karma.conf.js: Karma test runner config
 
 ### Frontend Generated Directories
 
 - frontend/dist/: Compiled frontend output
 - frontend/.angular/: Angular cache
 - frontend/node_modules/: Installed JS dependencies
-
-## Core Packages: core/
-
-### core/backend/
-
-A reusable Rust backend core library with its own layered architecture:
-
-- core/backend/src/lib.rs: Package entrypoint
-- core/backend/src/domain/, application/, infrastructure/, presentation/
-- core/backend/src/error/: Normalized error model and handler abstractions
-- core/backend/src/plugin/: Plugin context, metadata, registry, and traits
-
-### core/frontend/
-
-A reusable TypeScript frontend core package:
-
-- core/frontend/src/core/models.ts: Common model primitives
-- core/frontend/src/core/viewmodel.ts: Viewmodel base behavior
-- core/frontend/src/core/events.ts: Core event bus utility
-- core/frontend/src/core/plugin.ts: Plugin abstractions
-- core/frontend/src/core/service.ts: Service base patterns
-- core/frontend/src/error/: Frontend error value model
-- core/frontend/src/index.ts: Package export surface
-
-## Plugins: plugins/
-
-- plugins/backend/plugin-database/: Backend plugin example
-  - Cargo.toml, plugin.json, src/lib.rs
-- plugins/frontend/: Frontend plugin extension area scaffold
-
-## Application Entrypoints: apps/
-
-- apps/desktop/: Desktop application wrapper crate
-  - apps/desktop/Cargo.toml
-  - apps/desktop/src/main.rs
-
-## Shared Contracts: shared/
-
-- shared/protocol/: Cross-boundary protocol scaffolding
-- shared/types/: Shared type contract scaffolding
 
 ## Configuration: config/
 
@@ -208,20 +171,6 @@ Typical configuration domains include app metadata, window behavior, database se
 - static/css/: Runtime stylesheets
 
 These assets are consumed by runtime HTML and desktop WebUI rendering.
-
-## Legacy Frontend Snapshots
-
-### frontend-origin/
-
-Historical frontend implementation retained for migration safety and comparison:
-
-- Independent source tree
-- Standalone configs
-- Historical event bus and bridge experiments
-
-### frontend/src-origin/
-
-Pre-MVVM restructuring snapshot kept for reference during transition.
 
 ## Vendor Sources: thirdparty/
 
@@ -255,6 +204,67 @@ Distribution output:
 - 07-getting-started.md: Getting started guide
 - 08-project-structure.md: This file
 - 09-errors-as-values.md: Error handling guide
-- ERRORS_AS_VALUES.md: Legacy error handling doc
-- ARCHITECTURE.md: Legacy architecture doc
-- PROJECT_STRUCTURE.md: Legacy structure doc
+- 10-testing.md: Testing guide
+
+## Build Scripts
+
+### run.sh
+
+Master build and run script:
+- Installs dependencies
+- Builds frontend and backend
+- Runs the application
+- Supports various flags (--build, --release, --clean, etc.)
+
+### build-frontend.js
+
+Frontend build orchestration:
+- Installs Bun dependencies
+- Runs Angular CLI production build
+- Copies assets to static directory
+- Patches index.html with correct paths
+
+### build-dist.sh
+
+Distribution package builder:
+- Creates platform-specific packages
+- Prepares executables for distribution
+- Generates archives (ZIP/TAR.GZ)
+
+### post-build.sh
+
+Post-build processing:
+- Executable renaming
+- Platform-specific adjustments
+- Final asset organization
+
+## Runtime Files
+
+### app.config.toml
+
+Application configuration loaded at startup.
+
+### app.db
+
+SQLite database file created on first run.
+
+### application.log
+
+Runtime log file with application events.
+
+## File Naming Conventions
+
+### Rust Files
+- snake_case for modules and functions
+- PascalCase for structs and enums
+- Trait files named after the trait
+
+### TypeScript Files
+- kebab-case for component files
+- PascalCase for classes
+- camelCase for functions and variables
+
+### Configuration Files
+- TOML for application config
+- JSON for package manifests
+- TypeScript for build configs

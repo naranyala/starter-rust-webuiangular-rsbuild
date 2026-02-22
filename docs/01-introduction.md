@@ -4,13 +4,14 @@
 
 Build desktop-class software with a modern web UI, a high-performance Rust core, and a codebase designed to scale from prototype to production.
 
-This repository is not a toy scaffold. It is a structured platform for teams who want:
+This repository is a structured platform for teams who want:
 
 - Rust reliability and performance in the application core
 - Angular velocity for rich UI and product iteration
 - WebUI-based desktop delivery without heavyweight Electron overhead
 - A layered architecture with clean separation of concerns
 - A growth path for plugins, shared contracts, and multiple app entrypoints
+- Comprehensive DevTools for system diagnostics and monitoring
 
 ## Why This Project Is Valuable
 
@@ -18,9 +19,9 @@ Most starter templates optimize for a quick demo. This one optimizes for long-te
 
 - It separates domain, application, infrastructure, and presentation on the Rust side
 - It embraces MVVM pattern on the Angular frontend with clear separation of models, viewmodels, and views
-- It keeps the active frontend and legacy frontend snapshots side-by-side for safe migration
 - It includes build orchestration scripts that connect frontend artifacts, static assets, and Rust binaries
-- It introduces extension points (core/, plugins/, shared/, apps/) early, so architecture does not collapse as scope grows
+- It introduces extension points early, so architecture does not collapse as scope grows
+- It provides comprehensive DevTools for debugging and monitoring
 
 ## Technology Stack
 
@@ -28,19 +29,19 @@ Most starter templates optimize for a quick demo. This one optimizes for long-te
 - Rust with WebUI integration
 - SQLite (rusqlite) for embedded database
 - Serialization stack (serde, serde_json, rmp-serde, serde_cbor)
-- Tokio async runtime
+- Comprehensive system information APIs
 
 ### Frontend
 - Angular 19
 - TypeScript
 - WinBox windowing integration
-- Rspack bundler
+- Angular Signals for reactive state
+- DevTools panel for diagnostics
 
 ### Build Tools
 - Cargo (Rust)
 - Angular CLI
 - Bun package manager
-- Rspack support scripts
 
 ### Runtime
 - Static asset serving (static/js, static/css)
@@ -57,7 +58,7 @@ Most starter templates optimize for a quick demo. This one optimizes for long-te
 - Cross-platform support (Windows, macOS, Linux)
 - Production-ready build pipeline
 - Event-driven architecture
-- Plugin-ready modular structure
+- DevTools panel with 11 diagnostic views
 
 ## Application Capabilities
 
@@ -68,6 +69,7 @@ Most starter templates optimize for a quick demo. This one optimizes for long-te
 - Event bus for pub/sub messaging
 - Window state management
 - Logging with multiple sinks
+- DevTools for comprehensive diagnostics
 
 ## Use Cases
 
@@ -81,6 +83,7 @@ This framework is suitable for:
 - Utility applications with system integration
 - Enterprise internal tools
 - Data entry and management applications
+- Development and debugging tools
 
 ## Related Documentation
 
@@ -92,3 +95,4 @@ This framework is suitable for:
 - [Dependencies](05-dependencies.md) - Complete dependency reference
 - [Improvements](06-improvements.md) - Suggested enhancements
 - [Errors as Values](09-errors-as-values.md) - Error handling pattern guide
+- [Testing](10-testing.md) - Testing strategy and guide

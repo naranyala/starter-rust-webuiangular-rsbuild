@@ -74,6 +74,49 @@ window.addEventListener('db_response', (event) => {
 });
 ```
 
+## DevTools Communication
+
+The DevTools panel uses a dedicated communication pattern for gathering system metrics:
+
+### Service Initialization
+
+```typescript
+// DevTools service initializes and starts data collection
+devToolsService.init();
+devToolsService.startAutoRefresh(2000); // 2-second interval
+```
+
+### Backend Endpoint Pattern
+
+```rust
+// System info endpoint
+window.bind("get_system_info", |event| {
+    let sysinfo = get_system_info();
+    let response = serde_json::json!({ "data": sysinfo });
+    let js = format!(
+        "window.dispatchEvent(new CustomEvent('get_system_info_response', {{ detail: {} }}))",
+        response
+    );
+    webui::Window::from_id(event.window).run_js(&js);
+});
+```
+
+### Frontend Service Pattern
+
+```typescript
+// DevTools service calls backend and processes response
+private async gatherSystemInfo(): Promise<void> {
+    const result = await this.callBackend<Record<string, unknown>>('get_system_info');
+    if (result) {
+        this.systemInfoSignal.set({
+            hostname: String(result.hostname || 'unknown'),
+            os: String(result.os || 'unknown'),
+            cpu_count: Number(result.cpu_count || 0),
+        });
+    }
+}
+```
+
 ## Event Bus System
 
 ### Backend Event Bus
@@ -326,4 +369,16 @@ Frontend events are logged to console and backend:
 
 ```typescript
 logger.info('Calling backend: get_users', { params });
+```
+
+### DevTools Event Logging
+
+The DevTools panel captures and displays events:
+
+```typescript
+// Event captured automatically
+devToolsService.addEvent('info', 'source', 'Message', { data });
+
+// Events displayed in Events tab with filtering
+// Filter options: All, Errors, Warnings, Info
 ```

@@ -24,19 +24,20 @@ export async function callBackend<T>(functionName: string, ...args: unknown[]): 
       window.removeEventListener(responseEventName, handler as EventListener);
 
       const customEvent = event as CustomEvent;
-      const response: ApiResponse | undefined = customEvent.detail?.response;
+      const response = customEvent.detail?.response as Record<string, unknown> | undefined;
 
-      if (response?.success && response.data !== undefined) {
+      if (response && 'data' in response && response.data !== undefined) {
         logger.debug(`Backend call success: ${functionName}`);
-        resolve({ success: true, value: response.data as T });
+        resolve({ ok: true, value: response.data as T });
       } else {
+        const respError = response?.error as { code?: ErrorCode; message?: string; details?: string } | undefined;
         const errorValue: ErrorValue = {
-          code: (response?.error?.code as ErrorCode) || ErrorCode.InternalError,
-          message: response?.error?.message || `Backend call failed: ${functionName}`,
-          details: response?.error?.details,
+          code: (respError?.code as ErrorCode) || ErrorCode.InternalError,
+          message: respError?.message || `Backend call failed: ${functionName}`,
+          details: respError?.details,
         };
         logger.error(`Backend call failed: ${functionName}`, {}, new Error(errorValue.message));
-        resolve({ success: false, error: errorValue });
+        resolve({ ok: false, error: errorValue });
       }
     };
 
@@ -44,7 +45,7 @@ export async function callBackend<T>(functionName: string, ...args: unknown[]): 
       window.removeEventListener(responseEventName, handler as EventListener);
       logger.error(`Backend call timeout: ${functionName}`);
       resolve({
-        success: false,
+        ok: false,
         error: {
           code: ErrorCode.InternalError,
           message: `Backend call timeout: ${functionName}`,
@@ -63,7 +64,7 @@ export async function callBackend<T>(functionName: string, ...args: unknown[]): 
         window.removeEventListener(responseEventName, handler as EventListener);
         logger.error(`Backend function not found: ${functionName}`);
         resolve({
-          success: false,
+          ok: false,
           error: {
             code: ErrorCode.InternalError,
             message: `Backend function not found: ${functionName}`,
@@ -80,7 +81,7 @@ export async function callBackend<T>(functionName: string, ...args: unknown[]): 
       window.removeEventListener(responseEventName, handler as EventListener);
       logger.error(`Backend call failed: ${functionName}`, { error: String(error) });
       resolve({
-        success: false,
+        ok: false,
         error: {
           code: ErrorCode.InternalError,
           message: `Failed to call backend: ${functionName}`,
@@ -129,4 +130,15 @@ export async function deleteUser(id: number): Promise<Result<number>> {
 
 export async function getSystemInfo(): Promise<Result<Record<string, unknown>>> {
   return callBackend<Record<string, unknown>>('get_system_info');
+}
+
+/**
+ * Type guards for Result
+ */
+export function isOk<T>(result: Result<T>): result is { ok: true; value: T } {
+  return 'ok' in result && result.ok === true;
+}
+
+export function isErr<T>(result: Result<T>): result is { ok: false; error: ErrorValue } {
+  return 'ok' in result && result.ok === false;
 }

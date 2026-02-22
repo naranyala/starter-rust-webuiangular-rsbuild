@@ -19,10 +19,10 @@
 - **Purpose**: JSON serialization
 
 - **Package**: rmp-serde (1.3)
-- **Purpose**: MessagePack serialization (alternative to JSON)
+- **Purpose**: MessagePack serialization
 
 - **Package**: serde_cbor (0.11)
-- **Purpose**: CBOR serialization (alternative to JSON)
+- **Purpose**: CBOR serialization
 
 - **Package**: toml (0.8)
 - **Purpose**: TOML configuration parsing
@@ -218,26 +218,61 @@
 - **Package**: @angular/router (19.x)
 - **Purpose**: Angular router
 
+- **Package**: @angular/ssr (19.x)
+- **Purpose**: Server-side rendering support
+
 ### Build Tools
 
-- **Package**: typescript
+- **Package**: typescript (5.5)
 - **Purpose**: TypeScript compiler
 
-- **Package**: @angular-devkit/build-angular
+- **Package**: @angular-devkit/build-angular (19.x)
 - **Purpose**: Angular build system
 
-- **Package**: @angular/cli
+- **Package**: @angular/build (19.x)
+- **Purpose**: Angular build tools
+
+- **Package**: @angular/cli (19.x)
 - **Purpose**: Angular CLI
 
 ### Development Tools
 
-- **Package**: @biomejs/biome
+- **Package**: @biomejs/biome (2.4)
 - **Purpose**: Linter and formatter
 
 ### Runtime Libraries
 
-- **Package**: winbox
+- **Package**: winbox (0.2.82)
 - **Purpose**: Window management library
+
+- **Package**: rxjs (7.8)
+- **Purpose**: Reactive extensions
+
+- **Package**: tslib (2.8)
+- **Purpose**: TypeScript runtime library
+
+- **Package**: zone.js (0.15)
+- **Purpose**: Change detection zone
+
+### Testing
+
+- **Package**: jasmine-core (5.1)
+- **Purpose**: Testing framework
+
+- **Package**: karma (6.4)
+- **Purpose**: Test runner
+
+- **Package**: karma-chrome-launcher (3.2)
+- **Purpose**: Chrome test runner
+
+- **Package**: karma-jasmine (5.1)
+- **Purpose**: Jasmine adapter for Karma
+
+- **Package**: karma-coverage-istanbul-reporter (3.0)
+- **Purpose**: Coverage reporting
+
+- **Package**: protractor (7.0)
+- **Purpose**: End-to-end testing
 
 ## Build Dependencies
 

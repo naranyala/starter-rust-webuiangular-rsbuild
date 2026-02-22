@@ -89,7 +89,7 @@
   </main>
 
   <!-- BOTTOM PANEL -->
-  <footer class="bottom-panel">
+  <footer class="bottom-panel" [class.devtools-mode]="activeBottomTab() === 'devtools'">
     <div class="bottom-panel__content">
       <!-- Status Bar -->
       <div class="status-bar">
@@ -219,6 +219,10 @@
                   <span class="info-card__label">Stack</span>
                   <span class="info-card__value">Angular + Rust</span>
                 </div>
+              </div>
+            } @else if (activeBottomTab() === 'devtools') {
+              <div class="devtools-container">
+                <app-devtools></app-devtools>
               </div>
             }
           </div>

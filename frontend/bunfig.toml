@@ -1,18 +1,19 @@
-# Bun configuration for Angular + Rsbuild project
-
-[install]
-# Use Bun's native installer
-prefer-offline = true
-
-[run]
-# Use Bun's JavaScript runtime
-shell = "bun"
+# Bun Test Configuration
+# https://bun.sh/docs/cli/test
 
 [test]
-# Bun test configuration
+# Test file patterns
 root = "./src"
-coverage = false
+include = ["**/*.spec.ts"]
+exclude = ["**/node_modules/**", "**/dist/**", "**/e2e/**"]
+
+# Coverage
+coverage = true
+coverageReporter = ["text", "lcov"]
 coverageDir = "./coverage"
-coverageReporter = "lcov"
-# Exclude legacy Jasmine/Karma tests and logger tests (need complex mocking)
-exclude = ["**/*.spec.ts", "**/logger.test.ts"]
+
+# Test execution
+timeout = 30000
+
+# TypeScript
+tsconfig = "./tsconfig.json"

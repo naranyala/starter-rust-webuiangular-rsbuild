@@ -6,8 +6,8 @@ This document describes the testing strategy and how to run tests for the Rust W
 
 The project uses a comprehensive testing approach with:
 
-- **Backend (Rust)**: Unit tests and integration tests using Cargo's built-in test framework
-- **Frontend (Angular)**: Unit tests using Jasmine and Karma
+- **Backend (Rust)**: Unit tests and integration tests using Cargo built-in test framework
+- **Frontend (Bun Test)**: Unit tests using Bun Test (fast, built-in test runner)
 
 ## Running Tests
 
@@ -47,29 +47,43 @@ Run tests matching a pattern:
 cargo test error
 ```
 
-### Frontend Tests
+### Frontend Tests (Bun Test)
 
-Run only frontend (Angular) tests:
+Run only frontend (Bun) tests:
 
 ```bash
 ./run.sh --test-frontend
 # Or from frontend directory
 cd frontend
-bun run test
+bun test
 ```
 
 Run tests in watch mode:
 
 ```bash
 cd frontend
-bun run test:watch
+bun test --watch
 ```
 
 Run tests with coverage:
 
 ```bash
 cd frontend
-bun run test:ci
+bun test --coverage
+```
+
+Run specific test file:
+
+```bash
+cd frontend
+bun test src/views/home/home.component.spec.ts
+```
+
+Run tests matching a pattern:
+
+```bash
+cd frontend
+bun test --test-name-pattern "should create"
 ```
 
 ## Test Structure
@@ -78,18 +92,20 @@ bun run test:ci
 
 ```
 src/
-├── core/
-│   ├── error.rs              # Unit tests inline
-│   └── infrastructure/
-│       ├── database/
-│       │   └── mod.rs        # Database module tests
-│       └── di.rs             # DI container tests
-│
++-- core/
+|   +-- error.rs              # Unit tests inline
+|   +-- infrastructure/
+|       +-- database/
+|       |   +-- mod.rs        # Database module tests
+|       +-- di.rs             # DI container tests
++-- utils/
+    +-- */mod.rs              # Utility module tests
+
 tests/
-├── common/
-│   └── mod.rs                # Test utilities and fixtures
-├── integration_db_handlers.rs    # Database integration tests
-└── integration_error_handling.rs # Error handling tests
++-- common/
+|   +-- mod.rs                # Test utilities and fixtures
++-- integration_db_handlers.rs    # Database integration tests
++-- integration_error_handling.rs # Error handling tests
 ```
 
 #### Test Categories
@@ -99,14 +115,14 @@ tests/
    - Use mocks for dependencies
    - Fast execution
 
-2. **Integration Tests** (in `tests/` directory)
+2. **Integration Tests** (in tests/ directory)
    - Test component interactions
    - Use real database (in-memory/temp file)
    - Test full request/response flow
 
 #### Test Fixtures
 
-The `tests/common/mod.rs` provides reusable test fixtures:
+The tests/common/mod.rs provides reusable test fixtures:
 
 ```rust
 use crate::common::DatabaseFixture;
@@ -115,36 +131,47 @@ use crate::common::DatabaseFixture;
 fn test_with_fixture() {
     // Fresh database for each test
     let fixture = DatabaseFixture::new();
-    
+
     // Database with sample data
     let fixture = DatabaseFixture::with_sample_data();
 }
 ```
 
-### Frontend Tests
+### Frontend Tests (Bun Test)
 
 ```
 frontend/src/
-├── types/
-│   └── error.types.spec.ts       # Error type tests
-├── core/
-│   └── global-error.service.spec.ts  # Error service tests
-└── viewmodels/
-    ├── event-bus.viewmodel.spec.ts   # Event bus tests
-    └── logger.spec.ts                # Logger tests
++-- viewmodels/
+|   +-- devtools.service.spec.ts    # DevTools service tests
++-- views/
+    +-- home/
+    |   +-- home.component.spec.ts  # Home component tests
+    +-- devtools/
+        +-- devtools.component.spec.ts # DevTools component tests
 ```
+
+#### Test Configuration Files
+
+- `bunfig.toml`: Bun Test configuration
+- `tsconfig.spec.json`: TypeScript configuration for tests
+- `src/test-setup.ts`: Test setup and Angular initialization
 
 #### Test Patterns
 
-1. **Unit Tests**
-   - Test individual services and components
-   - Use Jasmine spies for mocking
-   - Run in headless Chrome
+1. **Component Tests**
+   - Test Angular components with TestBed
+   - Use fixture.detectChanges() for change detection
+   - Query native element for DOM assertions
 
-2. **Test Utilities**
-   - `TestBed` for Angular DI
-   - `jasmine.createSpy()` for mocks
-   - Custom matchers for common assertions
+2. **Service Tests**
+   - Test services with mocked dependencies
+   - Use jest.fn() for mocking
+   - Test both sync and async operations
+
+3. **Pipe/Directive Tests**
+   - Test pure functions directly
+   - No TestBed needed for pipes
+   - Use DebugElement for directive tests
 
 ## Writing Tests
 
@@ -159,15 +186,15 @@ mod tests {
     fn test_feature() {
         // Arrange
         let input = ...;
-        
+
         // Act
         let result = function_under_test(input);
-        
+
         // Assert
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected);
     }
-    
+
     #[test]
     #[should_panic(expected = "error message")]
     fn test_panic() {
@@ -188,10 +215,10 @@ use crate::common::DatabaseFixture;
 fn test_database_operation() {
     // Arrange
     let fixture = DatabaseFixture::new();
-    
+
     // Act
     let result = fixture.db.insert_user("Name", "email@test.com", "User", "Active");
-    
+
     // Assert
     assert!(result.is_ok());
     let user_id = result.unwrap();
@@ -199,26 +226,36 @@ fn test_database_operation() {
 }
 ```
 
-### Frontend (TypeScript)
+### Frontend (Bun Test)
 
 ```typescript
-describe('ServiceName', () => {
-  let service: ServiceName;
-  
-  beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(ServiceName);
+import { describe, test, expect, beforeEach } from 'bun:test';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MyComponent } from './my.component';
+
+describe('MyComponent', () => {
+  let component: MyComponent;
+  let fixture: ComponentFixture<MyComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [MyComponent],
+    }).compileComponents();
   });
-  
-  it('should do something', () => {
-    // Arrange
-    const input = ...;
-    
-    // Act
-    const result = service.method(input);
-    
-    // Assert
-    expect(result).toBe(expected);
+
+  beforeEach(() => {
+    fixture = TestBed.createComponent(MyComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  test('should create the component', () => {
+    expect(component).toBeDefined();
+  });
+
+  test('should render title', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('h1')?.textContent).toContain('My App');
   });
 });
 ```
@@ -226,28 +263,43 @@ describe('ServiceName', () => {
 #### Testing Async Code
 
 ```typescript
-it('should handle async operation', async () => {
+// Async/await
+test('should handle async operation', async () => {
   const result = await service.asyncMethod();
   expect(result).toBeDefined();
 });
 
-it('should handle observables', (done) => {
-  service.observable$.subscribe(value => {
-    expect(value).toBe(expected);
-    done();
-  });
+// Promises with resolves/rejects
+test('should resolve promise', async () => {
+  await expect(service.getPromise()).resolves.toBe('value');
+});
+
+test('should reject promise', async () => {
+  await expect(service.getRejectedPromise()).rejects.toThrow();
 });
 ```
 
-#### Using Spies
+#### Using Mocks
 
 ```typescript
-it('should call dependency', () => {
-  const spy = spyOn(dependency, 'method').and.returnValue(mock);
-  
-  service.method();
-  
-  expect(spy).toHaveBeenCalled();
+import { jest } from 'bun:test';
+
+// Mock a function
+const mockFn = jest.fn();
+mockFn.mockReturnValue(42);
+
+// Spy on a method
+const spy = jest.spyOn(object, 'method');
+spy.mockImplementation(() => 'mocked');
+
+// Mock a service
+const mockService = {
+  getData: jest.fn().mockResolvedValue({ id: 1 }),
+};
+
+// Clear mocks after each test
+afterEach(() => {
+  jest.clearAllMocks();
 });
 ```
 
@@ -262,18 +314,27 @@ cargo install cargo-tarpaulin
 cargo tarpaulin --out Html
 ```
 
-View report in `./tarpaulin-report.html`
+View report in ./tarpaulin-report.html
 
-### Frontend
+### Frontend (Bun Test)
 
 Generate coverage report:
 
 ```bash
 cd frontend
-bun run test:ci
+bun test --coverage
 ```
 
-View report in `frontend/coverage/`
+View reports in:
+- frontend/coverage/lcov-report/index.html (HTML)
+- frontend/coverage/coverage-final.json (JSON)
+- Console output (text)
+
+Coverage is automatically generated with:
+- Lines covered
+- Functions covered
+- Branches covered
+- Statements covered
 
 ## Continuous Integration
 
@@ -285,7 +346,7 @@ Tests are designed to run in CI environments:
 
 # Or separately
 cargo test --locked --no-fail-fast
-cd frontend && bun run test:ci
+cd frontend && bun test --coverage
 ```
 
 ## Best Practices
@@ -304,12 +365,58 @@ cd frontend && bun run test:ci
 3. **Mock External Dependencies**: Don't rely on external services
 4. **Use Temp Files**: Clean up after file system tests
 
-### Frontend
+### Frontend (Bun Test)
 
-1. **Use TestBed**: Leverage Angular's testing utilities
-2. **Mock Services**: Don't call real APIs in unit tests
-3. **Test User Flows**: Test from user perspective
-4. **Handle Async**: Use async/await or fakeAsync
+1. **Use `toBeDefined()` for Components**: Prefer `expect(component).toBeDefined()` over `toBeTruthy()`
+2. **Use `async/await`**: Prefer async/await over callbacks or done()
+3. **Clean Up After Tests**: Use `afterEach(() => { jest.clearAllMocks(); })`
+4. **Mock External Services**: Don't call real APIs in unit tests
+5. **Test One Thing Per Test**: Keep tests focused and atomic
+6. **Use Descriptive Test Names**: `should return empty array when no users exist`
+7. **Leverage Bun Test Speed**: Run tests frequently during development
+
+## DevTools Testing
+
+The DevTools service can be tested with mocked backend responses:
+
+```typescript
+import { describe, test, expect, beforeEach, jest } from 'bun:test';
+
+describe('DevToolsService', () => {
+  let service: DevToolsService;
+  let mockEventBus: any;
+
+  beforeEach(() => {
+    mockEventBus = {
+      publish: jest.fn(),
+      subscribe: jest.fn(),
+    };
+    service = new DevToolsService(mockEventBus);
+  });
+
+  test('should gather system info', async () => {
+    await service.gatherSystemInfo();
+
+    const systemInfo = service.systemInfo();
+    expect(systemInfo).toBeDefined();
+  });
+
+  test('should add event to events log', () => {
+    service.addEvent('info', 'test-source', 'Test message');
+    
+    const events = service.events();
+    expect(events.length).toBeGreaterThan(0);
+    expect(events[0].source).toBe('test-source');
+  });
+
+  test('should export data as JSON string', () => {
+    const jsonData = service.exportData();
+    
+    expect(typeof jsonData).toBe('string');
+    expect(() => JSON.parse(jsonData)).not.toThrow();
+  });
+});
+```
 
 ## Troubleshooting
 
@@ -327,20 +434,56 @@ cargo test -- --list
 ls -la /tmp
 ```
 
-### Frontend
+**Mocking issues:**
+```bash
+# Ensure mockall is in dev-dependencies
+# cargo add mockall --dev
+```
+
+### Frontend (Bun Test)
 
 **Tests not running:**
 ```bash
-# Check Karma configuration
-cat frontend/karma.conf.js
+# Check bunfig.toml configuration
+cat bunfig.toml
+
+# Ensure test files match pattern *.spec.ts
+find src -name "*.spec.ts"
 ```
 
-**Headless Chrome errors:**
+**Test setup errors:**
 ```bash
-# Install Chrome for testing
-sudo apt-get install chromium-browser  # Linux
-# or
-brew install chromium  # macOS
+# Ensure test-setup.ts exists and is loaded
+cat src/test-setup.ts
+
+# Check that zone.js is installed
+bun install zone.js
+```
+
+**Coverage not generated:**
+```bash
+# Ensure coverage is enabled in bunfig.toml
+# coverageEnabled = true
+
+# Run with --coverage flag
+bun test --coverage
+```
+
+**Mock not working:**
+```bash
+# Use jest.fn() for mocks
+const mockFn = jest.fn();
+
+# Clear mocks after each test
+afterEach(() => {
+  jest.clearAllMocks();
+});
+```
+
+**Angular TestBed errors:**
+```bash
+# Ensure test-setup.ts initializes TestBed
+# Import components properly in TestBed.configureTestingModule
 ```
 
 ## Future Improvements
@@ -351,10 +494,12 @@ Consider adding:
 2. **Performance Tests**: Benchmark critical paths
 3. **Visual Regression Tests**: UI consistency checks
 4. **Contract Tests**: Backend-frontend API compatibility
+5. **DevTools Integration Tests**: Test DevTools panels with mock data
 
 ## Resources
 
-- [Rust Testing Documentation](https://doc.rust-lang.org/book/ch11-00-testing.html)
-- [Angular Testing Guide](https://angular.io/guide/testing)
-- [Jasmine Documentation](https://jasmine.github.io/)
-- [Mockall Documentation](https://docs.rs/mockall/)
+- Rust Testing Documentation: https://doc.rust-lang.org/book/ch11-00-testing.html
+- Bun Test Documentation: https://bun.sh/docs/cli/test
+- Bun Jest Compatibility: https://bun.sh/docs/runtime/jest
+- Angular Testing Guide: https://angular.io/guide/testing
+- Frontend Bun Test Guide: frontend/docs/BUN_TEST_GUIDE.md

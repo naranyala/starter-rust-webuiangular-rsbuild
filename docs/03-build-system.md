@@ -24,7 +24,7 @@ The main entry point for building and running the application.
 ### Build Steps
 1. Check prerequisites (Cargo, Bun)
 2. Install frontend dependencies
-3. Build frontend with Angular/Rspack
+3. Build frontend with Angular CLI
 4. Copy static assets
 5. Build Rust backend with Cargo
 6. Run post-build processing
@@ -36,16 +36,18 @@ JavaScript-based frontend build orchestration.
 
 ### Features
 - Dependency installation with Bun
-- Production build with Angular CLI
+- Production build with Angular CLI (AOT compilation)
 - Asset copying to static directory
 - WebUI bridge library handling
 - Index.html patching with correct paths
 
 ### Build Steps
 1. Install dependencies with Bun
-2. Run Angular production build
-3. Copy static assets to root directory
-4. Patch index.html with correct paths
+2. Run Angular production build with AOT
+3. Copy built assets to root static directory
+4. Copy WinBox library files
+5. Copy WebUI bridge files
+6. Patch index.html with correct relative paths
 
 ## Rust Build Script (build.rs)
 

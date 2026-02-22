@@ -176,7 +176,7 @@ export class EventBusViewModel<Events extends object> {
   getLast<K extends keyof Events & string>(name: K): BusEvent<K, Events[K]> | undefined {
     for (let i = this.history.length - 1; i >= 0; i--) {
       const entry = this.history[i];
-      if (entry.name === name) {
+      if (entry && entry.name === name) {
         return entry as BusEvent<K, Events[K]>;
       }
     }

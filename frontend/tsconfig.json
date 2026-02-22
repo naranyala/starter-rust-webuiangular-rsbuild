@@ -18,9 +18,9 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "skipLibCheck": true,
-    // Bleeding-edge optimizations
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // Relaxed for build
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true

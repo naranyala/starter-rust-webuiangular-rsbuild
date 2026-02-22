@@ -420,6 +420,11 @@
   height: 40px; /* Collapsed: bar only */
 }
 
+/* DevTools mode - 50% screen height */
+.bottom-panel.devtools-mode {
+  height: 50vh;
+}
+
 .bottom-panel__content {
   display: flex;
   flex-direction: column;
@@ -676,6 +681,15 @@
 
 .info-card__value.warn {
   color: #fbbf24;
+}
+
+/* ==================== DEVTOOLS CONTAINER ==================== */
+.devtools-container {
+  height: 50vh;
+  min-height: 300px;
+  max-height: 80vh;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 /* ==================== RESPONSIVE ==================== */
